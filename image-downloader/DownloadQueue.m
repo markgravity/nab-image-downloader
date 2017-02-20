@@ -112,9 +112,11 @@
     }
     
     // Re-add item in running list to waiting list
-    for (DownloadGroupInfo *downloadGroupInfo in self.runningList) {
+    for (NSInteger i=self.runningList.count-1; i>=0; i--){
+        DownloadGroupInfo *downloadGroupInfo = self.runningList[i];
         [self.waitingList insertObject:downloadGroupInfo atIndex:0];
     }
+    
     [self.runningList removeAllObjects];
 }
 
@@ -258,8 +260,10 @@
                         [downloadInfoInLoop.task resume];
                         
                         downloadInfoInLoop.status = DownloadStatusDownloading;
-                        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfoInLoop downloadGroupInfo:downloadGroupInfo];
 
+                    } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
+                        break;
                     }
                 }
             } else {
@@ -374,4 +378,72 @@
     }
 }
 
+-(void) setMaximumDownloadedPerGroup:(NSInteger)maximumDownloadedPerGroup{
+    NSInteger previousMaximumDownloadedPerGroup = _maximumDownloadedPerGroup;
+    _maximumDownloadedPerGroup = maximumDownloadedPerGroup;
+    
+    // Dont run the code bellow when all download are paused
+    if(self.isPaused){
+        return;
+    }
+    
+    if(previousMaximumDownloadedPerGroup > maximumDownloadedPerGroup){
+        // Bring download task that out of new maximum downloaded per group
+        // back to queue
+        for (DownloadGroupInfo *downloadGroupInfo in self.runningList) {
+            NSInteger downloadingCount=0;
+            for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
+                if(downloadInfo.status == DownloadStatusDownloading){
+                     downloadingCount++;
+                    
+                    if(downloadingCount > maximumDownloadedPerGroup
+                       && downloadingCount <= previousMaximumDownloadedPerGroup){
+                        downloadInfo.status = DownloadStatusQueuing;
+                        [downloadInfo.task cancelByProducingResumeData:^(NSData *resumeData){
+                            downloadInfo.resumeData = resumeData;
+                        }];
+                        
+                        if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
+                            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                        }
+                    } else if(downloadingCount > previousMaximumDownloadedPerGroup){
+                        break;
+                    }
+                    
+                   
+                }
+                
+            }
+        }
+    } else if(previousMaximumDownloadedPerGroup < maximumDownloadedPerGroup){
+        
+        // Open more download task
+        for (DownloadGroupInfo *downloadGroupInfo in self.runningList) {
+            for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
+                if(downloadInfo.status == DownloadStatusQueuing
+                   && downloadGroupInfo.downloadingCount < self.maximumDownloadedPerGroup){
+                    
+                    NSURL *URL = [NSURL URLWithString:downloadInfo.url];
+                    
+                    if(downloadInfo.task == nil
+                       || downloadInfo.resumeData == nil){
+                        downloadInfo.task = [self.session downloadTaskWithURL:URL];
+                    } else {
+                        downloadInfo.task = [self.session downloadTaskWithResumeData:downloadInfo.resumeData];
+                    }
+                    
+                    
+                    [downloadInfo.task resume];
+                    
+                    downloadInfo.status = DownloadStatusDownloading;
+                    [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                    
+                } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
+                    break;
+                }
+            }
+
+        }
+    }
+}
 @end

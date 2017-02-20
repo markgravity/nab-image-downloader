@@ -41,7 +41,7 @@
     
     // Initialize download queue
     self.downloadQueue = [[DownloadQueue alloc] init];
-    self.downloadQueue.maximumDownloadedPerGroup = 2;
+    self.downloadQueue.maximumDownloadedPerGroup = self.connectionNumberSlider.value;
     self.downloadQueue.maximumDownloadedGroup = self.connectionNumberSlider.value;
     self.downloadQueue.delegate = self;
     [App current].downloadQueue = self.downloadQueue;
@@ -301,5 +301,6 @@
 
 - (IBAction)connectionNumberSliderChanged:(id)sender {
     self.downloadQueue.maximumDownloadedGroup = round(self.connectionNumberSlider.value);
+    self.downloadQueue.maximumDownloadedPerGroup = round(self.connectionNumberSlider.value);
 }
 @end

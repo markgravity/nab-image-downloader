@@ -48,11 +48,11 @@
                                         <rect key="frame" x="0.0" y="1" width="375" height="65"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="G3d-d2-F3j" id="Jwx-0X-Aoh">
-                                            <rect key="frame" x="0.0" y="0.0" width="375" height="64.5"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Image0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L3k-5x-Bpn">
-                                                    <rect key="frame" x="18" y="0.0" width="339" height="21"/>
+                                                    <rect key="frame" x="18" y="8" width="339" height="21"/>
                                                     <constraints>
                                                         <constraint firstAttribute="height" constant="21" id="wxL-qa-238"/>
                                                     </constraints>
@@ -67,9 +67,9 @@
                                                     </constraints>
                                                 </progressView>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Downloading..." textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="kW1-6r-GIT">
-                                                    <rect key="frame" x="18" y="22" width="339" height="21"/>
+                                                    <rect key="frame" x="18" y="29" width="339" height="14"/>
                                                     <constraints>
-                                                        <constraint firstAttribute="height" constant="21" id="O5J-X8-rB6"/>
+                                                        <constraint firstAttribute="height" constant="14" id="O5J-X8-rB6"/>
                                                     </constraints>
                                                     <fontDescription key="fontDescription" style="UICTFontTextStyleCaption2"/>
                                                     <nil key="textColor"/>
@@ -81,8 +81,8 @@
                                                 <constraint firstItem="kW1-6r-GIT" firstAttribute="leading" secondItem="Jwx-0X-Aoh" secondAttribute="leading" constant="18" id="FeS-8d-kN4"/>
                                                 <constraint firstItem="sF7-yG-1cg" firstAttribute="leading" secondItem="Jwx-0X-Aoh" secondAttribute="leading" constant="18" id="TIa-9g-sP3"/>
                                                 <constraint firstItem="L3k-5x-Bpn" firstAttribute="leading" secondItem="Jwx-0X-Aoh" secondAttribute="leading" constant="18" id="Uki-Z9-Th8"/>
-                                                <constraint firstItem="kW1-6r-GIT" firstAttribute="top" secondItem="L3k-5x-Bpn" secondAttribute="bottom" constant="1" id="Vei-9s-WbW"/>
-                                                <constraint firstItem="L3k-5x-Bpn" firstAttribute="top" secondItem="Jwx-0X-Aoh" secondAttribute="top" id="f5q-BW-DZ5"/>
+                                                <constraint firstItem="kW1-6r-GIT" firstAttribute="top" secondItem="L3k-5x-Bpn" secondAttribute="bottom" id="Vei-9s-WbW"/>
+                                                <constraint firstItem="L3k-5x-Bpn" firstAttribute="top" secondItem="Jwx-0X-Aoh" secondAttribute="top" constant="8" id="f5q-BW-DZ5"/>
                                                 <constraint firstAttribute="trailing" secondItem="sF7-yG-1cg" secondAttribute="trailing" constant="18" id="gc6-F3-VLZ"/>
                                                 <constraint firstAttribute="trailing" secondItem="kW1-6r-GIT" secondAttribute="trailing" constant="18" id="j0i-f3-xxo"/>
                                                 <constraint firstItem="sF7-yG-1cg" firstAttribute="top" secondItem="kW1-6r-GIT" secondAttribute="bottom" constant="8" id="mCW-t2-td4"/>
