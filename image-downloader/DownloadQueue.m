@@ -191,6 +191,8 @@
                     break;
                 }
             }
+        } else {
+            break;
         }
     }
     
@@ -202,7 +204,12 @@
 -(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo{
     if([self.mbDownloadGroups containsObject:downloadGroupInfo]){
         for(DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos){
-            downloadInfo.status = DownloadStatusQueuing;
+            if(!self.isPaused){
+                downloadInfo.status = DownloadStatusQueuing;
+            } else {
+                downloadInfo.status = DownloadStatusPaused;
+            }
+            
             downloadInfo.resumeData = nil;
             downloadInfo.savedURL = nil;
             downloadInfo.progress = 0.0;
@@ -211,18 +218,53 @@
                 [downloadInfo.task cancel];
             }
             downloadInfo.task = nil;
+            
+            // Delegate
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+            }
         }
     }
     
-    // For the case thid group is all finished
+    // For the case this group is finished
     if(![self.runningList containsObject:downloadGroupInfo]
        && ![self.waitingList containsObject:downloadGroupInfo]){
         [self.waitingList insertObject:downloadGroupInfo atIndex:0];
     }
     
-    [self pause];
-    [self resume];
+    
+    if(!self.isPaused){
+        [self pause];
+        [self resume];
+    }
 }
+-(void) runNextDownloadInDownloadGroup:(DownloadGroupInfo *)downloadGroupInfo{
+    for (DownloadInfo *downloadInfoInLoop in downloadGroupInfo.downloadInfos) {
+        if(downloadInfoInLoop.status == DownloadStatusQueuing
+           && downloadGroupInfo.downloadingCount < self.maximumDownloadedPerGroup){
+            
+            NSURL *URL = [NSURL URLWithString:downloadInfoInLoop.url];
+            
+            if(downloadInfoInLoop.task == nil
+               || downloadInfoInLoop.resumeData == nil){
+                downloadInfoInLoop.task = [self.session downloadTaskWithURL:URL];
+            } else {
+                downloadInfoInLoop.task = [self.session downloadTaskWithResumeData:downloadInfoInLoop.resumeData];
+            }
+            
+            
+            [downloadInfoInLoop.task resume];
+            
+            downloadInfoInLoop.status = DownloadStatusDownloading;
+            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfoInLoop downloadGroupInfo:downloadGroupInfo];
+            
+        } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
+            break;
+        }
+    }
+
+}
+
 #pragma mark - NSURLSessionDelegate
 - (void)URLSession:(NSURLSession *)session didBecomeInvalidWithError:(nullable NSError *)error{
      [self initializeBackgroundSession];
@@ -238,42 +280,24 @@
         
         if(downloadGroupInfo){
             downloadInfo.status = DownloadStatusFinished;
-            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
             
-            if(downloadGroupInfo.status != DownloadStatusFinished){
-                
+            if(downloadGroupInfo.status != DownloadGroupStatusFinished){
                 // Try to download the next download info
-                for (DownloadInfo *downloadInfoInLoop in downloadGroupInfo.downloadInfos) {
-                    if(downloadInfoInLoop.status == DownloadStatusQueuing
-                       && downloadGroupInfo.downloadingCount < self.maximumDownloadedPerGroup){
-                        
-                        NSURL *URL = [NSURL URLWithString:downloadInfoInLoop.url];
-                        
-                        if(downloadInfoInLoop.task == nil
-                           || downloadInfoInLoop.resumeData == nil){
-                            downloadInfoInLoop.task = [self.session downloadTaskWithURL:URL];
-                        } else {
-                            downloadInfoInLoop.task = [self.session downloadTaskWithResumeData:downloadInfoInLoop.resumeData];
-                        }
-
-                        
-                        [downloadInfoInLoop.task resume];
-                        
-                        downloadInfoInLoop.status = DownloadStatusDownloading;
-                        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfoInLoop downloadGroupInfo:downloadGroupInfo];
-
-                    } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
-                        break;
-                    }
-                }
+                [self runNextDownloadInDownloadGroup:downloadGroupInfo];
             } else {
+
                 // Try to download the next download group
                 [self.runningList removeObject:downloadGroupInfo];
                 [self run];
             }
             
             
-            // Delegate
+            // Delegate: didChange
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+            }
+            
+            // Delegate: didFinish
             if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didFinishDownloadingToURL:)]){
                 [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didFinishDownloadingToURL:location];
             }
@@ -290,7 +314,16 @@
     if(downloadInfo
        && error != nil
        && ![error.localizedDescription isEqualToString:@"cancelled"]){
-        downloadInfo.status = DownloadStatusFailed;
+        
+        // Find assocciated download group info
+        DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
+        if(downloadGroupInfo){
+            downloadInfo.status = DownloadStatusFailed;
+            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+            
+            // Try to download the next download info
+            [self runNextDownloadInDownloadGroup:downloadGroupInfo];
+        }
     }
 }
 
@@ -308,8 +341,6 @@
         if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:)]){
             [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didWriteData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];
         }
-        
-//        NSLog(@"DOWNLOADING: %@", downloadGroupInfo.title);
     }
     
 }

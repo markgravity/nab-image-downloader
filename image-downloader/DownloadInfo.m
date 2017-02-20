@@ -25,6 +25,9 @@
 -(void) setStatus:(DownloadStatus)status{
     DownloadStatus previousStatus = _status;
     _status = status;
+    
+    // Recount queue, downloading, finished number
+    // for the download group
     if(self.downloadGroupInfo){
         if(previousStatus == DownloadStatusDownloading){
             self.downloadGroupInfo.downloadingCount--;

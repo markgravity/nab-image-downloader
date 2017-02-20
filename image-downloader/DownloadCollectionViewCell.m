@@ -10,6 +10,7 @@
 #import "DownloadInfo.h"
 #import "NSString+Extension.h"
 #import "PDFUtility.h"
+#import "Utils.h"
 
 @implementation DownloadCollectionViewCell
 
@@ -27,6 +28,16 @@
                 
             } else {
                 image = [UIImage imageWithContentsOfFile:downloadInfo.savedURL.path];
+                
+                CGSize thumbnailImageViewSize = self.thumbnailImageView.frame.size;
+                CGSize size = CGSizeMake(thumbnailImageViewSize.width, thumbnailImageViewSize.width * image.size.height / image.size.width);
+                if(size.height < thumbnailImageViewSize.height){
+                    size.height = thumbnailImageViewSize.height;
+                    size.width = size.height * thumbnailImageViewSize.width / thumbnailImageViewSize.height;
+                }
+                
+                size = CGSizeMake(size.width*2, size.height*2);
+                image = [Utils imageWithImage:image convertToSize:size];
             }
             
             self.thumbnailImageView.image = image;

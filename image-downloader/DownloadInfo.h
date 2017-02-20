@@ -34,6 +34,7 @@ typedef enum {
 
 @property (nonatomic) DownloadStatus status;
 
+// The group that contains this
 @property (nonatomic) DownloadGroupInfo *downloadGroupInfo;
 
 -(id)initWithDownloadUrl:(NSString *)url;

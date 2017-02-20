@@ -9,6 +9,13 @@
 #import <Foundation/Foundation.h>
 #import "DownloadInfo.h"
 
+typedef enum {
+    DownloadGroupStatusReady = 0,
+    DownloadGroupStatusQueuing,
+    DownloadGroupStatusDownloading,
+    DownloadGroupStatusFinished
+}DownloadGroupStatus;
+
 @interface DownloadGroupInfo : NSObject
 @property (nonatomic, strong) NSString *title;
 
@@ -20,7 +27,7 @@
 // DownloadStatusQueuing
 // DownloadStatusDownloading
 // DownloadStatusFinished
-@property (nonatomic) DownloadStatus status;
+@property (nonatomic) DownloadGroupStatus status;
 @property (atomic) NSInteger downloadingCount;
 @property (atomic) NSInteger finshedCount;
 @property (atomic) NSInteger queuingCount;

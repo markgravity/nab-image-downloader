@@ -83,7 +83,6 @@
     UIButton *button = sender;
     button.enabled = NO;
     [[App current].downloadQueue reloadDownloadGroup:self.downloadGroup];
-    [self.collectionView reloadData];
     button.enabled = YES;
 }
 @end

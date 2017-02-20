@@ -15,6 +15,7 @@
 
 @property (weak, nonatomic) DownloadGroupInfo *downloadGroup;
 
+@property (weak, nonatomic) IBOutlet UIButton *reloadButton;
 @property (weak, nonatomic) IBOutlet UICollectionView *collectionView;
 - (IBAction)reloadButtonTouchUp:(id)sender;
 

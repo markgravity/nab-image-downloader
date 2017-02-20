@@ -15,8 +15,13 @@
 @protocol DownloadQueueDelegate <NSObject>
 
 @optional
+// A download info that has a download task did finish
 -(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didFinishDownloadingToURL:(NSURL *)location;
+
+// A download info that has a download task did write data
 -(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite;
+
+// A download info did change something
 -(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo;
 @end
 @interface DownloadQueue : NSObject<NSURLSessionDelegate>
@@ -30,8 +35,10 @@
 
 -(void) queueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo;
 -(void) unQueueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo;
+-(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo;
+
 -(void) pause;
 -(void) resume;
 -(void) reset;
--(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo;
+
 @end

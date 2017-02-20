@@ -16,6 +16,10 @@
     if(self != nil){
         self.title = title;
         self.downloadInfos = downloadInfos;
+        self.downloadingCount = 0;
+        self.queuingCount = 0;
+        self.finshedCount = 0;
+        
         for (DownloadInfo *downloadInfo in self.downloadInfos) {
             downloadInfo.downloadGroupInfo = self;
         }
@@ -40,15 +44,15 @@
     return (double)self.finshedCount / (double)self.downloadInfos.count;
 }
 
--(DownloadStatus) status{
+-(DownloadGroupStatus) status{
     if(self.downloadingCount > 0){
-        return DownloadStatusDownloading;
+        return DownloadGroupStatusDownloading;
     } else if(self.finshedCount == self.downloadInfos.count){
-        return DownloadStatusFinished;
+        return DownloadGroupStatusFinished;
     } else if(self.queuingCount == self.downloadInfos.count - self.finshedCount){
-        return DownloadStatusQueuing;
+        return DownloadGroupStatusQueuing;
     }
     
-    return DownloadStatusReady;
+    return DownloadGroupStatusReady;
 }
 @end

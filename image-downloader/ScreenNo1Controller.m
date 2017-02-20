@@ -82,6 +82,7 @@
     
     return cell;
 }
+
 #pragma mark - UITableViewDelegate
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
     DownloadGroupInfo *downloadGroupInfo = self.downloadQueue.downloadGroups[indexPath.row];
@@ -99,7 +100,9 @@
     
     // Handle file type
     if([downloadInfo.task.currentRequest.URL.path.pathExtension isEqualToString:@"zip"]){
+        // It is zip file
         downloadInfo.status = DownloadStatusUnzipping;
+        
         //  Notify a change of download
         [App current].downloadChangedHandler(downloadInfo, downloadGroupInfo);
         
@@ -123,6 +126,7 @@
             [fileManager removeItemAtPath:fileInTempUrl.path error:nil];
         }
     } else {
+        // It is image or PDF
         // Save downloaded file to download folder
         NSError *error;
         
@@ -192,21 +196,24 @@
         dispatch_async(dispatch_get_main_queue(), ^(){
             NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroupInfo];
             NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-            
             DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
             [cell updateViewsWith:downloadGroupInfo];
-            
-            
-            // Update enable state for Pause/Resume button, anytime has a changed download
-            self.pauseButton.enabled = self.pauseButton.tag == 1;
-            for (DownloadGroupInfo *downloadGroupInfo in self.downloadQueue.downloadGroups) {
-                if(downloadGroupInfo.downloadingCount > 0){
-                    self.pauseButton.enabled = YES;
-                    break;
-                }
-            }
         });
     }
+    
+    
+    dispatch_async(dispatch_get_main_queue(), ^(){
+        // Update enable state for Pause/Resume button, anytime has a changed download
+        self.pauseButton.enabled = self.pauseButton.tag == 1;
+        for (DownloadGroupInfo *downloadGroupInfo in self.downloadQueue.downloadGroups) {
+            if(downloadGroupInfo.downloadingCount > 0){
+                self.pauseButton.enabled = YES;
+                break;
+            }
+        }
+    });
+
+    
 }
 
 #pragma mark - IBAction
@@ -243,8 +250,7 @@
     button.enabled = NO;
     
     // Download package data
-//    NSURL *URL = [NSURL URLWithString:@"http://localhost/JSON%20files%20updated.zip"];
-    NSURL *URL = [NSURL URLWithString:@"http://markg.in/JSON%20files%20updated.zip"];
+    NSURL *URL = [NSURL URLWithString:DATA_PACKAGE_URL_STRING];
     NSURLRequest *downloadRequest = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:90];
     
     NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession] downloadTaskWithRequest:downloadRequest completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error){

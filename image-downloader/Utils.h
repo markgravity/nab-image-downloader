@@ -12,4 +12,5 @@
 + (NSString *)jsonEncode:(NSDictionary *)data;
 + (id)jsonDecode:(NSString *)json;
 + (UIColor *)colorFromHexString:(NSString *)hexString;
++ (UIImage *)imageWithImage:(UIImage *)image convertToSize:(CGSize)size;
 @end

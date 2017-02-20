@@ -202,7 +202,7 @@
             </objects>
             <point key="canvasLocation" x="136.80000000000001" y="130.88455772113943"/>
         </scene>
-        <!--Screen No2 Controller-->
+        <!--Screen 2-->
         <scene sceneID="v2Z-Vu-eyZ">
             <objects>
                 <viewController automaticallyAdjustsScrollViewInsets="NO" id="aOF-qn-wu8" customClass="ScreenNo2Controller" sceneMemberID="viewController">
@@ -280,13 +280,16 @@
                             <constraint firstItem="ENA-mr-l4A" firstAttribute="leading" secondItem="E6B-2T-Bw4" secondAttribute="leading" id="tS3-dm-d3T"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" id="vdB-Yd-5Xx">
+                    <navigationItem key="navigationItem" title="Screen 2" id="vdB-Yd-5Xx">
                         <barButtonItem key="rightBarButtonItem" style="plain" id="q62-Bw-6HP">
                             <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="IfZ-mY-okT">
                                 <rect key="frame" x="309" y="7" width="50" height="30"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <state key="normal" title="Reload">
                                     <color key="titleColor" red="0.20392156859999999" green="0.59607843140000005" blue="0.85882352939999995" alpha="1" colorSpace="calibratedRGB"/>
+                                </state>
+                                <state key="disabled">
+                                    <color key="titleColor" red="0.81568627449999997" green="0.81568627449999997" blue="0.81568627449999997" alpha="1" colorSpace="calibratedRGB"/>
                                 </state>
                                 <connections>
                                     <action selector="reloadButtonTouchUp:" destination="aOF-qn-wu8" eventType="touchUpInside" id="4NZ-tG-S8V"/>
@@ -296,6 +299,7 @@
                     </navigationItem>
                     <connections>
                         <outlet property="collectionView" destination="ENA-mr-l4A" id="bZ8-Sn-T2k"/>
+                        <outlet property="reloadButton" destination="IfZ-mY-okT" id="mYE-QO-aVu"/>
                         <segue destination="8xH-bV-RDr" kind="show" identifier="toScreenNo3Controller" id="rFT-WW-ef1"/>
                     </connections>
                 </viewController>
@@ -351,18 +355,6 @@
                             <constraint firstItem="Zhn-Oa-NJF" firstAttribute="top" secondItem="p11-ek-nut" secondAttribute="bottom" constant="20" id="zxX-II-om9"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" id="0oT-ZU-gN0">
-                        <barButtonItem key="rightBarButtonItem" style="plain" id="gh7-iN-FI5">
-                            <button key="customView" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" id="1oi-BA-dns">
-                                <rect key="frame" x="276" y="7" width="83" height="30"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <state key="normal" title="Reload"/>
-                                <connections>
-                                    <action selector="reloadButtonTouchUp:" destination="8xH-bV-RDr" eventType="touchUpInside" id="z5m-CY-op3"/>
-                                </connections>
-                            </button>
-                        </barButtonItem>
-                    </navigationItem>
                     <nil key="simulatedTopBarMetrics"/>
                     <connections>
                         <outlet property="imageView" destination="oxX-XN-vIN" id="EN8-Vp-UgF"/>

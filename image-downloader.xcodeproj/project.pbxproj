@@ -65,6 +65,7 @@
 		2D7841081E58A69D00E53180 /* DownloadGroupInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DownloadGroupInfo.m; sourceTree = "<group>"; };
 		2D78410A1E58A91E00E53180 /* DownloadQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DownloadQueue.h; sourceTree = "<group>"; };
 		2D78410B1E58A91E00E53180 /* DownloadQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DownloadQueue.m; sourceTree = "<group>"; };
+		2DC17CF31E5B3DB500573203 /* Constant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Constant.h; sourceTree = "<group>"; };
 		2DF606411E5A84E90068A783 /* Slider.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Slider.h; sourceTree = "<group>"; };
 		2DF606421E5A84E90068A783 /* Slider.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Slider.m; sourceTree = "<group>"; };
 		2DF606441E5A9AD70068A783 /* CollectionView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CollectionView.h; sourceTree = "<group>"; };
@@ -125,6 +126,7 @@
 				2D7840E31E58864600E53180 /* AppDelegate.m */,
 				2D7840FA1E588A3F00E53180 /* App.h */,
 				2D7840FB1E588A3F00E53180 /* App.m */,
+				2DC17CF31E5B3DB500573203 /* Constant.h */,
 				2D7840EB1E58864600E53180 /* Assets.xcassets */,
 				2D7840ED1E58864600E53180 /* LaunchScreen.storyboard */,
 				2D7840F01E58864600E53180 /* Info.plist */,
