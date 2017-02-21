@@ -33,14 +33,26 @@
 
 - (void) viewWillAppear:(BOOL)animated{
     __weak ScreenNo2Controller *weakSelf = self;
+    
+    // Update status is changed
     [App current].downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
+        if(self.downloadGroup == downloadGroupInfo){
+            dispatch_async(dispatch_get_main_queue(), ^(){
+                NSInteger index = [weakSelf.downloadGroup.downloadInfos indexOfObject:downloadInfo];
+                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+                [weakSelf.collectionView reloadItemsAtIndexPaths:@[indexPath]];
+            });
+        }
+    };
+    
+    // Update progress
+    [App current].progressDownloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
         if(self.downloadGroup == downloadGroupInfo){
             dispatch_async(dispatch_get_main_queue(), ^(){
                 NSInteger index = [weakSelf.downloadGroup.downloadInfos indexOfObject:downloadInfo];
                 NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
                 DownloadCollectionViewCell *cell = (DownloadCollectionViewCell* )[weakSelf.collectionView cellForItemAtIndexPath:indexPath];
                 [cell updateViewsWith:downloadInfo];
-//                [weakSelf.collectionView reloadItemsAtIndexPaths:@[indexPath]];
             });
         }
     };
@@ -85,6 +97,7 @@
     UIButton *button = sender;
     button.enabled = NO;
     [[App current].downloadQueue reloadDownloadGroup:self.downloadGroup];
+    [self.collectionView reloadData];
     button.enabled = YES;
 }
 @end

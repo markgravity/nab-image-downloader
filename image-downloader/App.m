@@ -28,6 +28,10 @@ static App *_current = nil;
         self.downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
             
         };
+        
+        self.progressDownloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
+            
+        };
     }
     
     return self;

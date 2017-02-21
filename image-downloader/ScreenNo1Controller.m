@@ -189,7 +189,8 @@
         DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
         cell.progressView.progress = downloadGroupInfo.progress;
         
-        [App current].downloadChangedHandler(downloadInfo, downloadGroupInfo);
+        // Notify a progress download is changed
+        [App current].progressDownloadChangedHandler(downloadInfo, downloadGroupInfo);
     });
 }
 -(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo{
@@ -290,8 +291,6 @@
                         
                         // Get title
                         NSString *title = jsonFileName.fileNameWithoutExtension;
-                        if(![title isEqualToString:@"images4"]
-                           && ![title isEqualToString:@"zip"]) continue;
                         
                         DownloadGroupInfo *downloadGroupInfo = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloadInfos];
                         

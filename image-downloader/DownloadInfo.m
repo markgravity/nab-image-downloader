@@ -16,6 +16,7 @@
         self.url = url;
         self.progress = 0.0;
         self.status = DownloadStatusReady;
+        self.thumbnailImage = nil;
         self.task = nil;
     }
     

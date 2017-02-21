@@ -216,6 +216,7 @@
             downloadInfo.resumeData = nil;
             downloadInfo.savedURL = nil;
             downloadInfo.progress = 0.0;
+            downloadInfo.thumbnailImage = nil;
             
             if(downloadInfo.task){
                 [downloadInfo.task cancel];
@@ -345,7 +346,6 @@
             // Handle status code
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)downloadTask.response;
             if(httpResponse.statusCode != 200){
-                
                 [downloadTask cancel];
                 downloadInfo.status = DownloadStatusFailed;
                 

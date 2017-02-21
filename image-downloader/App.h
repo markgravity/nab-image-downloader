@@ -16,6 +16,7 @@ typedef void(^DownloadChangedHandler)(DownloadInfo *downloadInfo, DownloadGroupI
 
 @property (strong, nonatomic) DownloadQueue *downloadQueue;
 @property (strong, nonatomic) DownloadChangedHandler downloadChangedHandler;
+@property (strong, nonatomic) DownloadChangedHandler progressDownloadChangedHandler;
 
 +(instancetype) current;
 @end
