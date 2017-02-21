@@ -6,7 +6,7 @@
 //  Copyright © 2017 MarkG. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 typedef enum {
     DownloadStatusReady = 0,
     DownloadStatusQueuing,
@@ -29,6 +29,7 @@ typedef enum {
 @property (nonatomic, strong) NSData *resumeData;
 
 @property (nonatomic, strong) NSURL *savedURL;
+@property (nonatomic, strong) UIImage *thumbnailImage;
 
 @property (nonatomic) double progress;
 

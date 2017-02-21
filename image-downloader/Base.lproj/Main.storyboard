@@ -48,7 +48,7 @@
                                         <rect key="frame" x="0.0" y="1" width="375" height="65"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="G3d-d2-F3j" id="Jwx-0X-Aoh">
-                                            <rect key="frame" x="0.0" y="0.0" width="375" height="64"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="375" height="64.5"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Image0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="L3k-5x-Bpn">
@@ -151,6 +151,9 @@
                                     <state key="normal" title="Reset">
                                         <color key="titleColor" red="1" green="0.05310703435742381" blue="0.096349881399968362" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                     </state>
+                                    <state key="disabled">
+                                        <color key="titleColor" red="0.81568627449999997" green="0.81568627449999997" blue="0.81568627449999997" alpha="1" colorSpace="calibratedRGB"/>
+                                    </state>
                                     <connections>
                                         <action selector="resetButtonTouchUp:" destination="BYZ-38-t0r" eventType="touchUpInside" id="PVT-bc-ctC"/>
                                     </connections>
@@ -232,11 +235,11 @@
                                             <autoresizingMask key="autoresizingMask"/>
                                             <subviews>
                                                 <imageView userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="3Xy-Rt-vCJ">
-                                                    <rect key="frame" x="0.0" y="0.0" width="159" height="150"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="150" height="150"/>
                                                     <color key="backgroundColor" red="0.81568627449999997" green="0.81568627449999997" blue="0.81568627449999997" alpha="1" colorSpace="calibratedRGB"/>
                                                 </imageView>
                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Xni-Kf-fnw">
-                                                    <rect key="frame" x="8" y="121" width="143" height="21"/>
+                                                    <rect key="frame" x="8" y="121" width="134" height="21"/>
                                                     <constraints>
                                                         <constraint firstAttribute="height" constant="21" id="NnM-bw-PK5"/>
                                                     </constraints>

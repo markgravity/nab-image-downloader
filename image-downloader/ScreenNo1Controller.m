@@ -149,6 +149,9 @@
     if(success){
         downloadInfo.status = DownloadStatusUsable;
         downloadInfo.savedURL = savedURL;
+        downloadInfo.resumeData = nil;
+        downloadInfo.task = nil;
+        
     } else {
         downloadInfo.status = DownloadStatusFailed;
     }
@@ -248,6 +251,7 @@
 - (IBAction)addButtonTouchUp:(id)sender {
     UIButton *button = sender;
     button.enabled = NO;
+    self.resetButton.enabled = NO;
     
     // Download package data
     NSURL *URL = [NSURL URLWithString:DATA_PACKAGE_URL_STRING];
@@ -255,51 +259,58 @@
     
     NSURLSessionDownloadTask *downloadTask = [[NSURLSession sharedSession] downloadTaskWithRequest:downloadRequest completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error){
         
-        NSFileManager *fileManager = [NSFileManager defaultManager];
-        
-        // Unzip downloaded file
-        BOOL success = [SSZipArchive unzipFileAtPath:location.path toDestination: self.documentDirectoryURL.path];
-        
-        if(success){
-            NSMutableArray *parts = [URL.lastPathComponent componentsSeparatedByString:@"."].mutableCopy;
-            [parts removeLastObject];
-            NSString *folderName = [parts componentsJoinedByString:@"."];
-            NSURL *folderURL = [self.documentDirectoryURL URLByAppendingPathComponent:folderName];
+        if(!error){
+            NSFileManager *fileManager = [NSFileManager defaultManager];
             
-            // Get all json files in extracted folder
-            NSArray *fileList = [fileManager contentsOfDirectoryAtPath:folderURL.path error:nil];
-            for (NSString *jsonFileName in fileList) {
-                if([jsonFileName.pathExtension isEqualToString:@"json"]){
-                    
-                    // Decode json
-                    NSString *jsonFilePath = [folderURL URLByAppendingPathComponent:jsonFileName].path;
-                    NSString *json = [NSString stringWithContentsOfFile:jsonFilePath encoding:NSUTF8StringEncoding error:nil];
-                    NSArray *data = [Utils jsonDecode:json];
-                    
-                    // Make DownloadGroupInfo
-                    NSMutableArray *downloadInfos = [[NSMutableArray alloc] init];
-                    for (NSString *downloadUrl in data) {
-                        DownloadInfo *downloadInfo = [[DownloadInfo alloc] initWithDownloadUrl:downloadUrl];
-                        [downloadInfos addObject:downloadInfo];
+            // Unzip downloaded file
+            BOOL success = [SSZipArchive unzipFileAtPath:location.path toDestination: self.documentDirectoryURL.path];
+            
+            if(success){
+                NSMutableArray *parts = [URL.lastPathComponent componentsSeparatedByString:@"."].mutableCopy;
+                [parts removeLastObject];
+                NSString *folderName = [parts componentsJoinedByString:@"."];
+                NSURL *folderURL = [self.documentDirectoryURL URLByAppendingPathComponent:folderName];
+                
+                // Get all json files in extracted folder
+                NSArray *fileList = [fileManager contentsOfDirectoryAtPath:folderURL.path error:nil];
+                for (NSString *jsonFileName in fileList) {
+                    if([jsonFileName.pathExtension isEqualToString:@"json"]){
+                        
+                        // Decode json
+                        NSString *jsonFilePath = [folderURL URLByAppendingPathComponent:jsonFileName].path;
+                        NSString *json = [NSString stringWithContentsOfFile:jsonFilePath encoding:NSUTF8StringEncoding error:nil];
+                        NSArray *data = [Utils jsonDecode:json];
+                        
+                        // Make DownloadGroupInfo
+                        NSMutableArray *downloadInfos = [[NSMutableArray alloc] init];
+                        for (NSString *downloadUrl in data) {
+                            DownloadInfo *downloadInfo = [[DownloadInfo alloc] initWithDownloadUrl:downloadUrl];
+                            [downloadInfos addObject:downloadInfo];
+                        }
+                        
+                        // Get title
+                        NSString *title = jsonFileName.fileNameWithoutExtension;
+                        DownloadGroupInfo *downloadGroupInfo = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloadInfos];
+                        
+                        // Add to queue
+                        [self.downloadQueue queueDownloadGroupInfo:downloadGroupInfo];
+                        
                     }
-                    
-                    // Get title
-                    NSString *title = jsonFileName.fileNameWithoutExtension;
-                    DownloadGroupInfo *downloadGroupInfo = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloadInfos];
-                    
-                    // Add to queue
-                    [self.downloadQueue queueDownloadGroupInfo:downloadGroupInfo];
                     
                 }
                 
+                // Reload table
+                dispatch_async(dispatch_get_main_queue(), ^(){
+                    [self.tableView reloadData];
+                    self.didReloadedTableView = YES;
+                });
             }
-            
-            // Reload table
-            dispatch_async(dispatch_get_main_queue(), ^(){
-                [self.tableView reloadData];
-                self.didReloadedTableView = YES;
-            });
         }
+        
+        // Enable reset button
+        dispatch_async(dispatch_get_main_queue(), ^(){
+             self.resetButton.enabled = YES;
+        });
     }];
     
     [downloadTask resume];

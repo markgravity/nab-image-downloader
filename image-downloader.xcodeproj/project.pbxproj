@@ -13,6 +13,7 @@
 		2D4FE5231E59D6E700CC5DB4 /* NSString+Extension.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D4FE5221E59D6E700CC5DB4 /* NSString+Extension.m */; };
 		2D4FE5291E59EB2500CC5DB4 /* PDFUtility.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D4FE5281E59EB2500CC5DB4 /* PDFUtility.m */; };
 		2D4FE52C1E59F55000CC5DB4 /* ScreenNo3Controller.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D4FE52B1E59F55000CC5DB4 /* ScreenNo3Controller.m */; };
+		2D5F6AA31E5BD8F9002EACEB /* UIImage+Editor.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D5F6AA21E5BD8F9002EACEB /* UIImage+Editor.m */; };
 		2D7840E11E58864600E53180 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D7840E01E58864600E53180 /* main.m */; };
 		2D7840E41E58864600E53180 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D7840E31E58864600E53180 /* AppDelegate.m */; };
 		2D7840E71E58864600E53180 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2D7840E61E58864600E53180 /* ViewController.m */; };
@@ -43,6 +44,8 @@
 		2D4FE5281E59EB2500CC5DB4 /* PDFUtility.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PDFUtility.m; sourceTree = "<group>"; };
 		2D4FE52A1E59F55000CC5DB4 /* ScreenNo3Controller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ScreenNo3Controller.h; sourceTree = "<group>"; };
 		2D4FE52B1E59F55000CC5DB4 /* ScreenNo3Controller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ScreenNo3Controller.m; sourceTree = "<group>"; };
+		2D5F6AA11E5BD8F9002EACEB /* UIImage+Editor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+Editor.h"; sourceTree = "<group>"; };
+		2D5F6AA21E5BD8F9002EACEB /* UIImage+Editor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+Editor.m"; sourceTree = "<group>"; };
 		2D7840DC1E58864600E53180 /* image-downloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "image-downloader.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D7840E01E58864600E53180 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		2D7840E21E58864600E53180 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -92,6 +95,8 @@
 			children = (
 				2D4FE5211E59D6E700CC5DB4 /* NSString+Extension.h */,
 				2D4FE5221E59D6E700CC5DB4 /* NSString+Extension.m */,
+				2D5F6AA11E5BD8F9002EACEB /* UIImage+Editor.h */,
+				2D5F6AA21E5BD8F9002EACEB /* UIImage+Editor.m */,
 			);
 			name = Categories;
 			sourceTree = "<group>";
@@ -363,6 +368,7 @@
 				2D4FE51C1E59AAE200CC5DB4 /* DownloadCollectionViewCell.m in Sources */,
 				2D7840E71E58864600E53180 /* ViewController.m in Sources */,
 				2D7840FC1E588A3F00E53180 /* App.m in Sources */,
+				2D5F6AA31E5BD8F9002EACEB /* UIImage+Editor.m in Sources */,
 				2D7840E41E58864600E53180 /* AppDelegate.m in Sources */,
 				2DF606461E5A9AD70068A783 /* CollectionView.m in Sources */,
 				2D4FE5161E596EB600CC5DB4 /* Utils.m in Sources */,
