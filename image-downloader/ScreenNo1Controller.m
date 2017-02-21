@@ -17,6 +17,7 @@
 #import "Utils.h"
 #import "ScreenNo2Controller.h"
 #import "NSString+Extension.h"
+#import "Alert.h"
 
 
 @interface ScreenNo1Controller ()
@@ -249,8 +250,7 @@
 }
 
 - (IBAction)addButtonTouchUp:(id)sender {
-    UIButton *button = sender;
-    button.enabled = NO;
+    self.addButton.enabled = NO;
     self.resetButton.enabled = NO;
     
     // Download package data
@@ -290,6 +290,9 @@
                         
                         // Get title
                         NSString *title = jsonFileName.fileNameWithoutExtension;
+                        if(![title isEqualToString:@"images4"]
+                           && ![title isEqualToString:@"zip"]) continue;
+                        
                         DownloadGroupInfo *downloadGroupInfo = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloadInfos];
                         
                         // Add to queue
@@ -305,12 +308,19 @@
                     self.didReloadedTableView = YES;
                 });
             }
+            
+            // Enable reset button
+            dispatch_async(dispatch_get_main_queue(), ^(){
+                self.resetButton.enabled = YES;
+            });
+        } else {
+            dispatch_async(dispatch_get_main_queue(), ^(){
+                self.addButton.enabled = YES;
+                alert(@"The resources not available. Please re-check your download link.");
+
+            });
         }
         
-        // Enable reset button
-        dispatch_async(dispatch_get_main_queue(), ^(){
-             self.resetButton.enabled = YES;
-        });
     }];
     
     [downloadTask resume];

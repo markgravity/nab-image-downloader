@@ -41,7 +41,7 @@
         }
     };
     
-    // Register a swipe
+    // Register swipes
     UISwipeGestureRecognizer *swipeGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeRightToLeft)];
     [swipeGesture setNumberOfTouchesRequired:1];
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionLeft];

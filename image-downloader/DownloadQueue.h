@@ -24,7 +24,7 @@
 // A download info did change something
 -(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo;
 @end
-@interface DownloadQueue : NSObject<NSURLSessionDelegate>
+@interface DownloadQueue : NSObject<NSURLSessionDataDelegate>
 
 @property (nonatomic, strong, readonly) NSURLSession *session;
 @property (nonatomic, strong, readonly) NSArray *downloadGroups;

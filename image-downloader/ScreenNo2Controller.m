@@ -35,11 +35,13 @@
     __weak ScreenNo2Controller *weakSelf = self;
     [App current].downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
         if(self.downloadGroup == downloadGroupInfo){
-            [[NSOperationQueue mainQueue] addOperationWithBlock:^(){
+            dispatch_async(dispatch_get_main_queue(), ^(){
                 NSInteger index = [weakSelf.downloadGroup.downloadInfos indexOfObject:downloadInfo];
                 NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-                [weakSelf.collectionView reloadItemsAtIndexPaths:@[indexPath]];
-            }];
+                DownloadCollectionViewCell *cell = (DownloadCollectionViewCell* )[weakSelf.collectionView cellForItemAtIndexPath:indexPath];
+                [cell updateViewsWith:downloadInfo];
+//                [weakSelf.collectionView reloadItemsAtIndexPaths:@[indexPath]];
+            });
         }
     };
 }

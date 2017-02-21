@@ -36,7 +36,6 @@
 
 - (void)initializeBackgroundSession{
     NSURLSessionConfiguration *sessionConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:@"in.markg.image-downloader"];
-//    sessionConfiguration.HTTPMaximumConnectionsPerHost = 10;
     sessionConfiguration.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     
     _session = [NSURLSession sessionWithConfiguration:sessionConfiguration
@@ -203,6 +202,10 @@
 }
 -(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo{
     if([self.mbDownloadGroups containsObject:downloadGroupInfo]){
+        downloadGroupInfo.downloadingCount = 0;
+        downloadGroupInfo.queuingCount = 0;
+        downloadGroupInfo.finshedCount = 0;
+        
         for(DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos){
             if(!self.isPaused){
                 downloadInfo.status = DownloadStatusQueuing;
@@ -274,7 +277,8 @@
     // Find assocciated download info
     DownloadInfo *downloadInfo = [self downloadInfoWithTaskIdentifier:downloadTask.taskIdentifier];
     
-    if(downloadInfo){
+    if(downloadInfo
+       && downloadInfo.status != DownloadStatusFailed){
         // Find assocciated download group info
         DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
         
@@ -336,11 +340,28 @@
         
         // Find assocciated download group info
         DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
-        
-        // Delegate
-        if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:)]){
-            [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didWriteData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];
+        if(downloadGroupInfo){
+            
+            // Handle status code
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)downloadTask.response;
+            if(httpResponse.statusCode != 200){
+                
+                [downloadTask cancel];
+                downloadInfo.status = DownloadStatusFailed;
+                
+                // Try to download the next download info
+                [self runNextDownloadInDownloadGroup:downloadGroupInfo];
+                
+                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                
+            } else {
+                // Delegate
+                if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:)]){
+                    [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didWriteData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];
+                }
+            }
         }
+        
     }
     
 }
@@ -362,7 +383,6 @@
         }
     }];
 }
-
 
 #pragma mark Get & Set
 -(NSArray *) downloadGroups{

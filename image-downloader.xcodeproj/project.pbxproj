@@ -46,6 +46,7 @@
 		2D4FE52B1E59F55000CC5DB4 /* ScreenNo3Controller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ScreenNo3Controller.m; sourceTree = "<group>"; };
 		2D5F6AA11E5BD8F9002EACEB /* UIImage+Editor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UIImage+Editor.h"; sourceTree = "<group>"; };
 		2D5F6AA21E5BD8F9002EACEB /* UIImage+Editor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UIImage+Editor.m"; sourceTree = "<group>"; };
+		2D5F6AA41E5BF837002EACEB /* Alert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Alert.h; sourceTree = "<group>"; };
 		2D7840DC1E58864600E53180 /* image-downloader.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "image-downloader.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2D7840E01E58864600E53180 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		2D7840E21E58864600E53180 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -169,6 +170,7 @@
 				2D4FE5281E59EB2500CC5DB4 /* PDFUtility.m */,
 				2D4FE5141E596EB600CC5DB4 /* Utils.h */,
 				2D4FE5151E596EB600CC5DB4 /* Utils.m */,
+				2D5F6AA41E5BF837002EACEB /* Alert.h */,
 			);
 			name = Helpers;
 			sourceTree = "<group>";
