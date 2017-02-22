@@ -288,7 +288,6 @@
                         
                         // Get title
                         NSString *title = jsonFileName.fileNameWithoutExtension;
-                        if(![title isEqualToString:@"zip"]) continue;
                         DownloadGroupInfo *downloadGroup = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloads];
                         
                         // Add to queue
