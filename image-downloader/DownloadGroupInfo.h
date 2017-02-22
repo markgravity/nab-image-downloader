@@ -17,21 +17,16 @@ typedef enum {
 }DownloadGroupStatus;
 
 @interface DownloadGroupInfo : NSObject
+
 @property (nonatomic, strong) NSString *title;
-
-@property (nonatomic, strong) NSArray *downloadInfos;
-@property (nonatomic, readonly) double progress;
-
-// Available status:
-// DownloadStatusReady
-// DownloadStatusQueuing
-// DownloadStatusDownloading
-// DownloadStatusFinished
+@property (nonatomic, strong) NSArray *downloads;
 @property (nonatomic) DownloadGroupStatus status;
 @property (atomic) NSInteger downloadingCount;
 @property (atomic) NSInteger finshedCount;
 @property (atomic) NSInteger queuingCount;
 
--(id)initWithTitle:(NSString *)title andDownloadInfos:(NSArray *)downloadInfos;
+@property (nonatomic, strong) NSProgress *progress;
+
+-(id)initWithTitle:(NSString *)title andDownloadInfos:(NSArray *)downloads;
 -(DownloadInfo *) downloadInfoWithTaskIdentifier:(NSUInteger) taskIdentifier;
 @end

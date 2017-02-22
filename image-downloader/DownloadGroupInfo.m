@@ -10,18 +10,20 @@
 
 
 @implementation DownloadGroupInfo
--(id)initWithTitle:(NSString *)title andDownloadInfos:(NSArray *)downloadInfos{
+-(id)initWithTitle:(NSString *)title andDownloadInfos:(NSArray *)downloads{
     self = [super init];
     
     if(self != nil){
         self.title = title;
-        self.downloadInfos = downloadInfos;
+        self.downloads = downloads;
         self.downloadingCount = 0;
         self.queuingCount = 0;
         self.finshedCount = 0;
+        self.progress = [NSProgress progressWithTotalUnitCount:downloads.count];
         
-        for (DownloadInfo *downloadInfo in self.downloadInfos) {
-            downloadInfo.downloadGroupInfo = self;
+        for (DownloadInfo *download in self.downloads) {
+            download.downloadGroup = self;
+            [self.progress addChild:download.progress withPendingUnitCount:1];
         }
     }
     
@@ -29,10 +31,10 @@
 }
 
 -(DownloadInfo *) downloadInfoWithTaskIdentifier:(NSUInteger) taskIdentifier{
-    for (DownloadInfo *downloadInfo in self.downloadInfos) {
-        if(downloadInfo.task != nil
-           && downloadInfo.task.taskIdentifier == taskIdentifier){
-            return downloadInfo;
+    for (DownloadInfo *download in self.downloads) {
+        if(download.task != nil
+           && download.task.taskIdentifier == taskIdentifier){
+            return download;
         }
             
     }
@@ -40,16 +42,12 @@
     return nil;
 }
 
--(double) progress{
-    return (double)self.finshedCount / (double)self.downloadInfos.count;
-}
-
 -(DownloadGroupStatus) status{
     if(self.downloadingCount > 0){
         return DownloadGroupStatusDownloading;
-    } else if(self.finshedCount == self.downloadInfos.count){
+    } else if(self.finshedCount == self.downloads.count){
         return DownloadGroupStatusFinished;
-    } else if(self.queuingCount == self.downloadInfos.count - self.finshedCount){
+    } else if(self.queuingCount == self.downloads.count - self.finshedCount){
         return DownloadGroupStatusQueuing;
     }
     

@@ -22,11 +22,11 @@
     // Configure the view for the selected state
 }
 
--(void) updateViewsWith:(DownloadGroupInfo *)downloadGroupInfo{
-    self.titleLabel.text = downloadGroupInfo.title;
-    self.progressView.progress = downloadGroupInfo.progress;
+-(void) updateViewsWith:(DownloadGroupInfo *)downloadGroup{
+    self.titleLabel.text = downloadGroup.title;
+    self.progressView.progress = (double)downloadGroup.progress.completedUnitCount/(double)downloadGroup.progress.totalUnitCount;
     
-    switch (downloadGroupInfo.status) {
+    switch (downloadGroup.status) {
         case DownloadGroupStatusDownloading:
             self.statusLabel.text = @"Downloading..";
             self.progressView.hidden = NO;

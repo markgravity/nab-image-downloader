@@ -16,13 +16,13 @@
 
 @optional
 // A download info that has a download task did finish
--(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didFinishDownloadingToURL:(NSURL *)location;
+-(void)downloadQueue:(DownloadQueue *)downloadQueue download:(DownloadInfo *)download downloadGroup:(DownloadGroupInfo *) downloadGroup didFinishDownloadingToURL:(NSURL *)location;
 
 // A download info that has a download task did write data
--(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite;
+-(void)downloadQueue:(DownloadQueue *)downloadQueue download:(DownloadInfo *)download downloadGroup:(DownloadGroupInfo *) downloadGroup didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite;
 
 // A download info did change something
--(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo;
+-(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)download downloadGroup:(DownloadGroupInfo *) downloadGroup;
 @end
 @interface DownloadQueue : NSObject<NSURLSessionDataDelegate>
 
@@ -32,10 +32,11 @@
 @property (nonatomic) NSInteger maximumDownloadedPerGroup;
 @property (weak, nonatomic) id<DownloadQueueDelegate> delegate;
 @property (nonatomic, readonly) BOOL isPaused;
+@property (nonatomic, strong) NSProgress *progress;
 
--(void) queueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo;
--(void) unQueueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo;
--(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo;
+-(void) queueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroup;
+-(void) unQueueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroup;
+-(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroup;
 
 -(void) pause;
 -(void) resume;

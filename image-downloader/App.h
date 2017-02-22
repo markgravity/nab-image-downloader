@@ -10,7 +10,7 @@
 @class DownloadInfo;
 @class DownloadGroupInfo;
 @class DownloadQueue;
-typedef void(^DownloadChangedHandler)(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo);
+typedef void(^DownloadChangedHandler)(DownloadInfo *download, DownloadGroupInfo *downloadGroup);
 
 @interface App : NSObject
 

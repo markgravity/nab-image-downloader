@@ -30,16 +30,6 @@
     self.currentIndex = self.initialIndex;
     [self updateViews];
     
-    // Update on change
-    __weak ScreenNo3Controller *weakSelf = self;
-    DownloadInfo *currentDownloadInfo = self.downloadGroup.downloadInfos[self.currentIndex];
-    [App current].downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
-        if(currentDownloadInfo == downloadInfo){
-             [[NSOperationQueue mainQueue] addOperationWithBlock:^{
-                 [weakSelf updateViews];
-             }];
-        }
-    };
     
     // Register swipes
     UISwipeGestureRecognizer *swipeGesture = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(swipeRightToLeft)];
@@ -51,6 +41,9 @@
     [swipeGesture setNumberOfTouchesRequired:1];
     [swipeGesture setDirection:UISwipeGestureRecognizerDirectionRight];
     [self.view addGestureRecognizer:swipeGesture];
+    
+    // Register observe
+    [self registerObserveForDownload:self.downloadGroup.downloads];
 
 }
 
@@ -62,20 +55,60 @@
 - (void)viewWillDisappear:(BOOL)animated{
     [self.navigationController setNavigationBarHidden:NO];
 }
+
+- (void) dealloc{
+    @try{
+        [self unRegisterObserveForDownloads:self.downloadGroup.downloads];
+    }
+    @catch(NSException *e){
+        
+    }
+}
+
+#pragma mark - Observes
+-(void) registerObserveForDownload:(NSArray *) downloads{
+    for (DownloadInfo *download in downloads) {
+        [download addObserver:self forKeyPath:@"progress.completedUnitCount" options:NSKeyValueObservingOptionInitial context:nil];
+        [download addObserver:self forKeyPath:@"unzippingProgress.completedUnitCount" options:NSKeyValueObservingOptionInitial context:nil];
+    }
+}
+-(void) unRegisterObserveForDownloads:(NSArray *) downloads{
+    for (DownloadInfo *download in downloads) {
+        [download removeObserver:self forKeyPath:@"progress.completedUnitCount"];
+        [download removeObserver:self forKeyPath:@"unzippingProgress.completedUnitCount"];
+    }
+}
+-(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    if([keyPath isEqualToString:@"progress.completedUnitCount"]
+       || [keyPath isEqualToString:@"unzippingProgress.completedUnitCount"]){
+        
+        // Update current download only
+        DownloadInfo *download = self.downloadGroup.downloads[self.currentIndex];
+        if(download == object)
+            dispatch_async(dispatch_get_main_queue(), ^(){
+                [self updateViews];
+            });
+        
+        
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+
 -(void) updateViews{
-    DownloadInfo *downloadInfo = self.downloadGroup.downloadInfos[self.currentIndex];
+    DownloadInfo *download = self.downloadGroup.downloads[self.currentIndex];
     
     self.imageView.backgroundColor = [UIColor lightGrayColor];
     self.imageView.image = nil;
     
-    if(downloadInfo.status == DownloadStatusUsable){
+    if(download.status == DownloadStatusUsable){
         UIImage *image;
-        if([downloadInfo.savedURL.path.pathExtension isEqualToString:@"pdf"]){
-            image = ImageFromPDFFile(downloadInfo.savedURL.path, self.imageView.frame.size);
+        if([download.savedURL.path.pathExtension isEqualToString:@"pdf"]){
+            image = ImageFromPDFFile(download.savedURL.path, self.imageView.frame.size);
             self.imageView.backgroundColor = [UIColor whiteColor];
             
         } else {
-            image = [UIImage imageWithContentsOfFile:downloadInfo.savedURL.path];
+            image = [UIImage imageWithContentsOfFile:download.savedURL.path];
         }
         
         self.imageView.image = image;
@@ -83,13 +116,13 @@
     
     self.pageLabel.text = [NSString stringWithFormat:@"%@/%@",
                            @(self.currentIndex+1).stringValue,
-                           @(self.downloadGroup.downloadInfos.count)];
+                           @(self.downloadGroup.downloads.count)];
 }
 
 -(void) swipeRightToLeft{
     self.currentIndex++;
-    if(self.currentIndex >= self.downloadGroup.downloadInfos.count){
-        self.currentIndex = self.downloadGroup.downloadInfos.count-1;
+    if(self.currentIndex >= self.downloadGroup.downloads.count){
+        self.currentIndex = self.downloadGroup.downloads.count-1;
         return;
     }
     

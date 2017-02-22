@@ -14,9 +14,10 @@
     self = [super init];
     if(self != nil){
         self.url = url;
-        self.progress = 0.0;
         self.status = DownloadStatusReady;
         self.thumbnailImage = nil;
+        self.progress = [NSProgress progressWithTotalUnitCount:0];
+        self.unzippingProgress = [NSProgress progressWithTotalUnitCount:1];
         self.task = nil;
     }
     
@@ -29,36 +30,36 @@
     
     // Recount queue, downloading, finished number
     // for the download group
-    if(self.downloadGroupInfo){
+    if(self.downloadGroup){
         if(previousStatus == DownloadStatusDownloading){
-            self.downloadGroupInfo.downloadingCount--;
+            self.downloadGroup.downloadingCount--;
         }
         
         if(previousStatus == DownloadStatusQueuing){
-            self.downloadGroupInfo.queuingCount--;
+            self.downloadGroup.queuingCount--;
         }
         
         if(previousStatus == DownloadStatusFinished
            || previousStatus == DownloadStatusUnzipping
            || previousStatus == DownloadStatusFailed
            || previousStatus == DownloadStatusUsable){
-            self.downloadGroupInfo.finshedCount--;
+            self.downloadGroup.finshedCount--;
         }
         
         switch (status) {
             case DownloadStatusQueuing:
-                self.downloadGroupInfo.queuingCount++;
+                self.downloadGroup.queuingCount++;
                 break;
                 
             case DownloadStatusDownloading:
-                self.downloadGroupInfo.downloadingCount++;
+                self.downloadGroup.downloadingCount++;
                 break;
                 
             case DownloadStatusFinished:
             case DownloadStatusUnzipping:
             case DownloadStatusFailed:
             case DownloadStatusUsable:
-                self.downloadGroupInfo.finshedCount++;
+                self.downloadGroup.finshedCount++;
 
                 break;
                 
@@ -66,16 +67,16 @@
                 break;
         }
         
-        if(self.downloadGroupInfo.finshedCount < 0){
-            self.downloadGroupInfo.finshedCount = 0;
+        if(self.downloadGroup.finshedCount < 0){
+            self.downloadGroup.finshedCount = 0;
         }
         
-        if(self.downloadGroupInfo.downloadingCount < 0){
-            self.downloadGroupInfo.downloadingCount = 0;
+        if(self.downloadGroup.downloadingCount < 0){
+            self.downloadGroup.downloadingCount = 0;
         }
         
-        if(self.downloadGroupInfo.queuingCount < 0){
-            self.downloadGroupInfo.queuingCount = 0;
+        if(self.downloadGroup.queuingCount < 0){
+            self.downloadGroup.queuingCount = 0;
         }
 
     }

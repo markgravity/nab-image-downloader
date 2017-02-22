@@ -24,6 +24,8 @@
         self.mbDownloadGroups = [[NSMutableArray alloc] init];
         self.runningList = [[NSMutableArray alloc] init];
         self.waitingList = [[NSMutableArray alloc] init];
+        self.progress = [NSProgress progressWithTotalUnitCount:0];
+        
         _isPaused = NO;
         
         // Initialier download session
@@ -46,10 +48,10 @@
 // Get index of DownloadInfo item in download list based on task identifier
 - (DownloadInfo *) downloadInfoWithTaskIdentifier:(NSUInteger) taskIdentifier{
     for (NSInteger i=0; i<self.mbDownloadGroups.count; i++) {
-        DownloadGroupInfo *downloadGroupInfo = self.mbDownloadGroups[i];
-        DownloadInfo *downloadInfo = [downloadGroupInfo downloadInfoWithTaskIdentifier:taskIdentifier];
-        if(downloadInfo){
-            return downloadInfo;
+        DownloadGroupInfo *downloadGroup = self.mbDownloadGroups[i];
+        DownloadInfo *download = [downloadGroup downloadInfoWithTaskIdentifier:taskIdentifier];
+        if(download){
+            return download;
         }
         
     }
@@ -58,11 +60,11 @@
 }
 
 // Get index of DownloadGroupInfo item in the list based on a DownloadInfo
-- (DownloadGroupInfo *) downloadGroupWithDownloadInfo:(DownloadInfo *) downloadInfo{
+- (DownloadGroupInfo *) downloadGroupWithDownloadInfo:(DownloadInfo *) download{
     for (NSInteger i=0; i<self.mbDownloadGroups.count; i++) {
-        DownloadGroupInfo *downloadGroupInfo = self.mbDownloadGroups[i];
-        if([downloadGroupInfo.downloadInfos containsObject:downloadInfo]){
-            return downloadGroupInfo;
+        DownloadGroupInfo *downloadGroup = self.mbDownloadGroups[i];
+        if([downloadGroup.downloads containsObject:download]){
+            return downloadGroup;
         }
         
     }
@@ -70,22 +72,27 @@
     return nil;
 }
 
--(void) queueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo{
-    [self.mbDownloadGroups addObject:downloadGroupInfo];
-    [self.waitingList addObject:downloadGroupInfo];
+-(void) queueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroup{
+    [self.mbDownloadGroups addObject:downloadGroup];
+    [self.waitingList addObject:downloadGroup];
+    self.progress.totalUnitCount++;
     
-    for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-        downloadInfo.status = DownloadStatusQueuing;
-        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+    for (DownloadInfo *download in downloadGroup.downloads) {
+        download.status = DownloadStatusQueuing;
+       
+        // Delegate: didChange
+        if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+            [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
+        }
     }
     
     [self run];
 }
--(void) unQueueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroupInfo{
-    if([self.mbDownloadGroups containsObject:downloadGroupInfo]){
-        [self.mbDownloadGroups removeObject:downloadGroupInfo];
-        [self.waitingList removeObject:downloadGroupInfo];
-        [self.runningList removeObject:downloadGroupInfo];
+-(void) unQueueDownloadGroupInfo:(DownloadGroupInfo *)downloadGroup{
+    if([self.mbDownloadGroups containsObject:downloadGroup]){
+        [self.mbDownloadGroups removeObject:downloadGroup];
+        [self.waitingList removeObject:downloadGroup];
+        [self.runningList removeObject:downloadGroup];
     }
 }
 
@@ -94,17 +101,17 @@
     _isPaused = YES;
     
     // Set status of all downloading task to paused
-    for (DownloadGroupInfo *downloadGroupInfo in self.mbDownloadGroups) {
-        for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-            if(downloadInfo.status == DownloadStatusDownloading
-               || downloadInfo.status == DownloadStatusQueuing){
-                downloadInfo.status = DownloadStatusPaused;
-                [downloadInfo.task cancelByProducingResumeData:^(NSData *resumeData){
-                    downloadInfo.resumeData = resumeData;
+    for (DownloadGroupInfo *downloadGroup in self.mbDownloadGroups) {
+        for (DownloadInfo *download in downloadGroup.downloads) {
+            if(download.status == DownloadStatusDownloading
+               || download.status == DownloadStatusQueuing){
+                download.status = DownloadStatusPaused;
+                [download.task cancelByProducingResumeData:^(NSData *resumeData){
+                    download.resumeData = resumeData;
                 }];
                 
-                if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                    [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                    [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
                 }
             }
         }
@@ -112,8 +119,8 @@
     
     // Re-add item in running list to waiting list
     for (NSInteger i=self.runningList.count-1; i>=0; i--){
-        DownloadGroupInfo *downloadGroupInfo = self.runningList[i];
-        [self.waitingList insertObject:downloadGroupInfo atIndex:0];
+        DownloadGroupInfo *downloadGroup = self.runningList[i];
+        [self.waitingList insertObject:downloadGroup atIndex:0];
     }
     
     [self.runningList removeAllObjects];
@@ -121,14 +128,14 @@
 
 -(void) resume{
     _isPaused = NO;
-    for (DownloadGroupInfo *downloadGroupInfo in self.mbDownloadGroups) {
-        for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-            if(downloadInfo.status == DownloadStatusPaused){
-                downloadInfo.status = DownloadStatusQueuing;
+    for (DownloadGroupInfo *downloadGroup in self.mbDownloadGroups) {
+        for (DownloadInfo *download in downloadGroup.downloads) {
+            if(download.status == DownloadStatusPaused){
+                download.status = DownloadStatusQueuing;
                 
                 // Delegate
-                if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                    [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                    [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
                 }
             }
         }
@@ -150,39 +157,39 @@
 // Find the next download files will be downloaded and start
 -(void) run{
     NSMutableArray *removedObjects = [[NSMutableArray alloc] init];
-    for (DownloadGroupInfo *downloadGroupInfo in self.waitingList) {
+    for (DownloadGroupInfo *downloadGroup in self.waitingList) {
         if(self.runningList.count < self.maximumDownloadedGroup){
-            [self.runningList addObject:downloadGroupInfo];
-            [removedObjects addObject:downloadGroupInfo];
+            [self.runningList addObject:downloadGroup];
+            [removedObjects addObject:downloadGroup];
             
             NSInteger runningCount = 0;
-            for (NSInteger i=0; i<downloadGroupInfo.downloadInfos.count; i++) {
+            for (NSInteger i=0; i<downloadGroup.downloads.count; i++) {
                 if(runningCount < self.maximumDownloadedPerGroup){
-                    DownloadInfo *downloadInfo = downloadGroupInfo.downloadInfos[i];
-                    if(downloadInfo.status == DownloadStatusFinished
-                       || downloadInfo.status == DownloadStatusUnzipping
-                       || downloadInfo.status == DownloadStatusFailed
-                       || downloadInfo.status == DownloadStatusUsable){
+                    DownloadInfo *download = downloadGroup.downloads[i];
+                    if(download.status == DownloadStatusFinished
+                       || download.status == DownloadStatusUnzipping
+                       || download.status == DownloadStatusFailed
+                       || download.status == DownloadStatusUsable){
                         continue;
                     }
                         
                     // Initializer a download task
-                    NSURL *URL = [NSURL URLWithString:downloadInfo.url];
-                    if(downloadInfo.task == nil
-                       || downloadInfo.resumeData == nil){
+                    NSURL *URL = [NSURL URLWithString:download.url];
+                    if(download.task == nil
+                       || download.resumeData == nil){
                         
-                        downloadInfo.task = [self.session downloadTaskWithURL:URL];
+                        download.task = [self.session downloadTaskWithURL:URL];
                     } else {
                     
-                        downloadInfo.task = [self.session downloadTaskWithResumeData:downloadInfo.resumeData];
+                        download.task = [self.session downloadTaskWithResumeData:download.resumeData];
                         
                     }
-                    [downloadInfo.task resume];
-                    downloadInfo.status = DownloadStatusDownloading;
+                    [download.task resume];
+                    download.status = DownloadStatusDownloading;
                     
                     // Delegate
-                    if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                    if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                        [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
                     }
                     
                     runningCount++;
@@ -196,44 +203,45 @@
     }
     
     // Remove running downloads from waiting list
-    for(DownloadGroupInfo *downloadGroupInfo in removedObjects){
-        [self.waitingList removeObject:downloadGroupInfo];
+    for(DownloadGroupInfo *downloadGroup in removedObjects){
+        [self.waitingList removeObject:downloadGroup];
     }
 }
--(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroupInfo{
-    if([self.mbDownloadGroups containsObject:downloadGroupInfo]){
-        downloadGroupInfo.downloadingCount = 0;
-        downloadGroupInfo.queuingCount = 0;
-        downloadGroupInfo.finshedCount = 0;
+-(void) reloadDownloadGroup:(DownloadGroupInfo *) downloadGroup{
+    if([self.mbDownloadGroups containsObject:downloadGroup]){
+        downloadGroup.downloadingCount = 0;
+        downloadGroup.queuingCount = 0;
+        downloadGroup.finshedCount = 0;
+        downloadGroup.progress.completedUnitCount = 0;
         
-        for(DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos){
+        for(DownloadInfo *download in downloadGroup.downloads){
             if(!self.isPaused){
-                downloadInfo.status = DownloadStatusQueuing;
+                download.status = DownloadStatusQueuing;
             } else {
-                downloadInfo.status = DownloadStatusPaused;
+                download.status = DownloadStatusPaused;
             }
             
-            downloadInfo.resumeData = nil;
-            downloadInfo.savedURL = nil;
-            downloadInfo.progress = 0.0;
-            downloadInfo.thumbnailImage = nil;
+            download.resumeData = nil;
+            download.savedURL = nil;
+            download.thumbnailImage = nil;
+            downloadGroup.progress.completedUnitCount = 0;
             
-            if(downloadInfo.task){
-                [downloadInfo.task cancel];
+            if(download.task){
+                [download.task cancel];
             }
-            downloadInfo.task = nil;
+            download.task = nil;
             
             // Delegate
-            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
             }
         }
     }
     
     // For the case this group is finished
-    if(![self.runningList containsObject:downloadGroupInfo]
-       && ![self.waitingList containsObject:downloadGroupInfo]){
-        [self.waitingList insertObject:downloadGroupInfo atIndex:0];
+    if(![self.runningList containsObject:downloadGroup]
+       && ![self.waitingList containsObject:downloadGroup]){
+        [self.waitingList insertObject:downloadGroup atIndex:0];
     }
     
     
@@ -242,10 +250,10 @@
         [self resume];
     }
 }
--(void) runNextDownloadInDownloadGroup:(DownloadGroupInfo *)downloadGroupInfo{
-    for (DownloadInfo *downloadInfoInLoop in downloadGroupInfo.downloadInfos) {
+-(void) runNextDownloadInDownloadGroup:(DownloadGroupInfo *)downloadGroup{
+    for (DownloadInfo *downloadInfoInLoop in downloadGroup.downloads) {
         if(downloadInfoInLoop.status == DownloadStatusQueuing
-           && downloadGroupInfo.downloadingCount < self.maximumDownloadedPerGroup){
+           && downloadGroup.downloadingCount < self.maximumDownloadedPerGroup){
             
             NSURL *URL = [NSURL URLWithString:downloadInfoInLoop.url];
             
@@ -260,9 +268,14 @@
             [downloadInfoInLoop.task resume];
             
             downloadInfoInLoop.status = DownloadStatusDownloading;
-            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfoInLoop downloadGroupInfo:downloadGroupInfo];
             
-        } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
+            // Delegate: didChange
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfoInLoop downloadGroup:downloadGroup];
+            }
+
+            
+        } else if(downloadGroup.downloadingCount >= self.maximumDownloadedPerGroup){
             break;
         }
     }
@@ -276,36 +289,38 @@
 -(void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location{
     
     // Find assocciated download info
-    DownloadInfo *downloadInfo = [self downloadInfoWithTaskIdentifier:downloadTask.taskIdentifier];
+    DownloadInfo *download = [self downloadInfoWithTaskIdentifier:downloadTask.taskIdentifier];
     
-    if(downloadInfo
-       && downloadInfo.status != DownloadStatusFailed){
+    if(download
+       && download.status != DownloadStatusFailed){
         // Find assocciated download group info
-        DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
+        DownloadGroupInfo *downloadGroup = [self downloadGroupWithDownloadInfo:download];
         
-        if(downloadGroupInfo){
-            downloadInfo.status = DownloadStatusFinished;
+        if(downloadGroup){
+            download.status = DownloadStatusFinished;
             
-            if(downloadGroupInfo.status != DownloadGroupStatusFinished){
+            if(downloadGroup.status != DownloadGroupStatusFinished){
                 // Try to download the next download info
-                [self runNextDownloadInDownloadGroup:downloadGroupInfo];
+                [self runNextDownloadInDownloadGroup:downloadGroup];
             } else {
 
                 // Try to download the next download group
-                [self.runningList removeObject:downloadGroupInfo];
+                [self.runningList removeObject:downloadGroup];
                 [self run];
             }
             
             
             // Delegate: didChange
-            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
             }
             
             // Delegate: didFinish
-            if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didFinishDownloadingToURL:)]){
-                [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didFinishDownloadingToURL:location];
+            if([self.delegate respondsToSelector:@selector(downloadQueue:download:downloadGroup:didFinishDownloadingToURL:)]){
+                [self.delegate downloadQueue:self download:download downloadGroup:downloadGroup didFinishDownloadingToURL:location];
             }
+            
+            download.progress.completedUnitCount = download.progress.totalUnitCount;
         }
     }
     
@@ -314,51 +329,68 @@
 
 -(void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error{
     // Find assocciated download info
-    DownloadInfo *downloadInfo = [self downloadInfoWithTaskIdentifier:task.taskIdentifier];
+    DownloadInfo *download = [self downloadInfoWithTaskIdentifier:task.taskIdentifier];
     
-    if(downloadInfo
+    if(download
        && error != nil
        && ![error.localizedDescription isEqualToString:@"cancelled"]){
         
         // Find assocciated download group info
-        DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
-        if(downloadGroupInfo){
-            downloadInfo.status = DownloadStatusFailed;
-            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+        DownloadGroupInfo *downloadGroup = [self downloadGroupWithDownloadInfo:download];
+        if(downloadGroup){
+            download.status = DownloadStatusFailed;
+            // Delegate: didChange
+            if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
+            }
+
+            
+            download.progress.completedUnitCount = download.progress.totalUnitCount;
             
             // Try to download the next download info
-            [self runNextDownloadInDownloadGroup:downloadGroupInfo];
+            [self runNextDownloadInDownloadGroup:downloadGroup];
         }
     }
 }
 
 
 -(void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite{
-    // Find assocciated download info
-    DownloadInfo *downloadInfo = [self downloadInfoWithTaskIdentifier:downloadTask.taskIdentifier];
     
-    if(downloadInfo){
+    // Find assocciated download info
+    DownloadInfo *download = [self downloadInfoWithTaskIdentifier:downloadTask.taskIdentifier];
+    
+    if(download){
         
         // Find assocciated download group info
-        DownloadGroupInfo *downloadGroupInfo = [self downloadGroupWithDownloadInfo:downloadInfo];
-        if(downloadGroupInfo){
+        DownloadGroupInfo *downloadGroup = [self downloadGroupWithDownloadInfo:download];
+        if(downloadGroup){
             
             // Handle status code
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)downloadTask.response;
-            if(httpResponse.statusCode != 200){
+            if(httpResponse.statusCode != 200
+               || totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown){
                 [downloadTask cancel];
-                downloadInfo.status = DownloadStatusFailed;
+                download.status = DownloadStatusFailed;
                 
                 // Try to download the next download info
-                [self runNextDownloadInDownloadGroup:downloadGroupInfo];
+                [self runNextDownloadInDownloadGroup:downloadGroup];
                 
-                [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                // Delegate: didChange
+                if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                    [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
+                }
                 
+                download.progress.totalUnitCount = 1;
+                download.progress.completedUnitCount = download.progress.totalUnitCount;
             } else {
                 // Delegate
-                if([self.delegate respondsToSelector:@selector(downloadQueue:downloadInfo:downloadGroupInfo:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:)]){
-                    [self.delegate downloadQueue:self downloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo didWriteData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];
+                download.progress.totalUnitCount = totalBytesExpectedToWrite+1;
+                download.progress.completedUnitCount = totalBytesWritten;
+                
+                if([self.delegate respondsToSelector:@selector(downloadQueue:download:downloadGroup:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:)]){
+                    [self.delegate downloadQueue:self download:download downloadGroup:downloadGroup didWriteData:bytesWritten totalBytesWritten:totalBytesWritten totalBytesExpectedToWrite:totalBytesExpectedToWrite];
                 }
+                
             }
         }
         
@@ -402,27 +434,27 @@
         
         // Bring back to waiting list
         for (NSInteger i = self.runningList.count-1; i>=maximumDownloadedGroup; i--) {
-            DownloadGroupInfo *downloadGroupInfo = self.runningList[i];
-            for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-                if(downloadInfo.status == DownloadStatusDownloading){
-                    downloadInfo.status = DownloadStatusQueuing;
-                    [downloadInfo.task cancelByProducingResumeData:^(NSData *resumeData){
-                        downloadInfo.resumeData = resumeData;
+            DownloadGroupInfo *downloadGroup = self.runningList[i];
+            for (DownloadInfo *download in downloadGroup.downloads) {
+                if(download.status == DownloadStatusDownloading){
+                    download.status = DownloadStatusQueuing;
+                    [download.task cancelByProducingResumeData:^(NSData *resumeData){
+                        download.resumeData = resumeData;
                     }];
                     
-                    if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                        [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                    if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                        [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
                     }
                 }
             }
             
-            [removedObjects addObject:downloadGroupInfo];
-            [self.waitingList insertObject:downloadGroupInfo atIndex:0];
+            [removedObjects addObject:downloadGroup];
+            [self.waitingList insertObject:downloadGroup atIndex:0];
         }
         
         // Remove from running list
-        for(DownloadGroupInfo *downloadGroupInfo in removedObjects){
-            [self.runningList removeObject:downloadGroupInfo];
+        for(DownloadGroupInfo *downloadGroup in removedObjects){
+            [self.runningList removeObject:downloadGroup];
         }
     } else if(self.runningList.count < maximumDownloadedGroup){
         [self run];
@@ -441,21 +473,21 @@
     if(previousMaximumDownloadedPerGroup > maximumDownloadedPerGroup){
         // Bring download task that out of new maximum downloaded per group
         // back to queue
-        for (DownloadGroupInfo *downloadGroupInfo in self.runningList) {
+        for (DownloadGroupInfo *downloadGroup in self.runningList) {
             NSInteger downloadingCount=0;
-            for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-                if(downloadInfo.status == DownloadStatusDownloading){
+            for (DownloadInfo *download in downloadGroup.downloads) {
+                if(download.status == DownloadStatusDownloading){
                      downloadingCount++;
                     
                     if(downloadingCount > maximumDownloadedPerGroup
                        && downloadingCount <= previousMaximumDownloadedPerGroup){
-                        downloadInfo.status = DownloadStatusQueuing;
-                        [downloadInfo.task cancelByProducingResumeData:^(NSData *resumeData){
-                            downloadInfo.resumeData = resumeData;
+                        download.status = DownloadStatusQueuing;
+                        [download.task cancelByProducingResumeData:^(NSData *resumeData){
+                            download.resumeData = resumeData;
                         }];
                         
-                        if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroupInfo:)]){
-                            [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                        if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                            [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
                         }
                     } else if(downloadingCount > previousMaximumDownloadedPerGroup){
                         break;
@@ -469,27 +501,31 @@
     } else if(previousMaximumDownloadedPerGroup < maximumDownloadedPerGroup){
         
         // Open more download task
-        for (DownloadGroupInfo *downloadGroupInfo in self.runningList) {
-            for (DownloadInfo *downloadInfo in downloadGroupInfo.downloadInfos) {
-                if(downloadInfo.status == DownloadStatusQueuing
-                   && downloadGroupInfo.downloadingCount < self.maximumDownloadedPerGroup){
+        for (DownloadGroupInfo *downloadGroup in self.runningList) {
+            for (DownloadInfo *download in downloadGroup.downloads) {
+                if(download.status == DownloadStatusQueuing
+                   && downloadGroup.downloadingCount < self.maximumDownloadedPerGroup){
                     
-                    NSURL *URL = [NSURL URLWithString:downloadInfo.url];
+                    NSURL *URL = [NSURL URLWithString:download.url];
                     
-                    if(downloadInfo.task == nil
-                       || downloadInfo.resumeData == nil){
-                        downloadInfo.task = [self.session downloadTaskWithURL:URL];
+                    if(download.task == nil
+                       || download.resumeData == nil){
+                        download.task = [self.session downloadTaskWithURL:URL];
                     } else {
-                        downloadInfo.task = [self.session downloadTaskWithResumeData:downloadInfo.resumeData];
+                        download.task = [self.session downloadTaskWithResumeData:download.resumeData];
                     }
                     
                     
-                    [downloadInfo.task resume];
+                    [download.task resume];
                     
-                    downloadInfo.status = DownloadStatusDownloading;
-                    [self.delegate downloadQueue:self didChangeDownloadInfo:downloadInfo downloadGroupInfo:downloadGroupInfo];
+                    download.status = DownloadStatusDownloading;
                     
-                } else if(downloadGroupInfo.downloadingCount >= self.maximumDownloadedPerGroup){
+                    // Delegate: didChange
+                    if([self.delegate respondsToSelector:@selector(downloadQueue:didChangeDownloadInfo:downloadGroup:)]){
+                        [self.delegate downloadQueue:self didChangeDownloadInfo:download downloadGroup:downloadGroup];
+                    }
+                    
+                } else if(downloadGroup.downloadingCount >= self.maximumDownloadedPerGroup){
                     break;
                 }
             }

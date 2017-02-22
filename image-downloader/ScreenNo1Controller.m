@@ -56,6 +56,57 @@
     self.pauseBarButton.enabled = NO;
 }
 
+- (void) dealloc{
+    @try{
+        [self unRegisterObserveForDownloadGroups:self.downloadQueue.downloadGroups];
+    }
+    @catch(NSException *e){
+        
+    }
+}
+
+#pragma mark - Observes
+-(void) registerObserveForDownloadGroups:(NSArray *) downloadGroups{
+    for (DownloadGroupInfo *downloadGroup in downloadGroups) {
+        [downloadGroup addObserver:self forKeyPath:@"progress.completedUnitCount" options:NSKeyValueObservingOptionInitial context:nil];
+    }
+}
+-(void) unRegisterObserveForDownloadGroups:(NSArray *) downloadGroups{
+    for (DownloadGroupInfo *downloadGroup in downloadGroups) {
+        [downloadGroup removeObserver:self forKeyPath:@"progress.completedUnitCount"];
+    }
+}
+-(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    if([keyPath isEqualToString:@"progress.completedUnitCount"]){
+        dispatch_async(dispatch_get_main_queue(), ^(){
+            [self updateForDownloadGroup:object];
+            [self updateToolbars];
+        });
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+-(void) updateForDownloadGroup:(DownloadGroupInfo *) downloadGroup{
+    NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroup];
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+    
+    DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+    [cell updateViewsWith:downloadGroup];
+
+}
+
+-(void) updateToolbars{
+    if(!self.downloadQueue.isPaused){
+        self.pauseButton.enabled = NO;;
+        for (DownloadGroupInfo *downloadGroup in self.downloadQueue.downloadGroups) {
+            if(downloadGroup.status == DownloadGroupStatusDownloading){
+                self.pauseButton.enabled = YES;
+                break;
+            }
+        }
+    }
+}
+
 #pragma mark - Navigation
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
@@ -65,6 +116,10 @@
     
     if([segue.identifier isEqualToString:@"toScreenNo2Controller"]){
         ScreenNo2Controller *dstController = segue.destinationViewController;
+        
+        if(self.downloadQueue.isPaused)
+            dstController.reloadButton.enabled = NO;
+        
         dstController.downloadGroup = sender;
     }
 }
@@ -78,60 +133,63 @@
 - (DownloadGroupTableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath{
     DownloadGroupTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"DownloadGroupTableViewCell" forIndexPath:indexPath];
     
-    DownloadGroupInfo *downloadGroupInfo = self.downloadQueue.downloadGroups[indexPath.row];
-    [cell updateViewsWith:downloadGroupInfo];
+    DownloadGroupInfo *downloadGroup = self.downloadQueue.downloadGroups[indexPath.row];
+    [cell updateViewsWith:downloadGroup];
     
     return cell;
 }
 
 #pragma mark - UITableViewDelegate
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
-    DownloadGroupInfo *downloadGroupInfo = self.downloadQueue.downloadGroups[indexPath.row];
-    [self performSegueWithIdentifier:@"toScreenNo2Controller" sender:downloadGroupInfo];
+    DownloadGroupInfo *downloadGroup = self.downloadQueue.downloadGroups[indexPath.row];
+    [self performSegueWithIdentifier:@"toScreenNo2Controller" sender:downloadGroup];
 }
 
 #pragma mark - DownloadQueueDelegate
--(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didFinishDownloadingToURL:(NSURL *)location{
+-(void)downloadQueue:(DownloadQueue *)downloadQueue download:(DownloadInfo *)download downloadGroup:(DownloadGroupInfo *) downloadGroup didFinishDownloadingToURL:(NSURL *)location{
     
-    NSURL *folderURL = [self.documentDirectoryURL URLByAppendingPathComponent:downloadGroupInfo.title];
+    NSURL *folderURL = [self.documentDirectoryURL URLByAppendingPathComponent:downloadGroup.title];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     BOOL success;
-    NSURL *savedURL;
-    
     
     // Handle file type
-    if([downloadInfo.task.currentRequest.URL.path.pathExtension isEqualToString:@"zip"]){
+    if([download.task.currentRequest.URL.path.pathExtension isEqualToString:@"zip"]){
         // It is zip file
-        downloadInfo.status = DownloadStatusUnzipping;
-        
-        //  Notify a change of download
-        [App current].downloadChangedHandler(downloadInfo, downloadGroupInfo);
-        
-        // Reload the cell at asscociated download group
-        dispatch_async(dispatch_get_main_queue(), ^(){
-            NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroupInfo];
-            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+        download.status = DownloadStatusUnzipping;
+        __block NSURL *theURL = location;
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(){
+            NSURL *tempFolderURL = [folderURL URLByAppendingPathComponent:download.task.currentRequest.URL.path.fileNameWithoutExtension];
             
-            DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-            [cell updateViewsWith:downloadGroupInfo];
+            // Extract it to temp folder
+            NSError *error;
+            BOOL succeeded = [SSZipArchive unzipFileAtPath:theURL.path toDestination:tempFolderURL.path  overwrite:YES password:nil error:&error];
+            if(succeeded){
+                
+                // Move back to parent folder
+                NSString *fileName = [fileManager contentsOfDirectoryAtPath:tempFolderURL.path error:nil].firstObject;
+                NSURL *fileInTempUrl = [tempFolderURL URLByAppendingPathComponent:fileName];
+                NSURL *savedURL = [folderURL URLByAppendingPathComponent:fileName];
+                [fileManager moveItemAtPath:fileInTempUrl.path toPath:savedURL.path error:nil];
+                [fileManager removeItemAtPath:fileInTempUrl.path error:nil];
+                
+                download.status = DownloadStatusUsable;
+                download.savedURL = savedURL;
+                download.resumeData = nil;
+                download.task = nil;
+            } else {
+                download.status = DownloadStatusFailed;
+            }
+            
+            NSLog(@"zipp");
+            download.unzippingProgress.completedUnitCount = download.unzippingProgress.totalUnitCount;
         });
-        
-        NSURL *tempFolderURL = [folderURL URLByAppendingPathComponent:downloadInfo.task.currentRequest.URL.path.fileNameWithoutExtension];
-        success = [SSZipArchive unzipFileAtPath:location.path toDestination:tempFolderURL.path];
-        
-        if(success){
-            NSString *fileName = [fileManager contentsOfDirectoryAtPath:tempFolderURL.path error:nil].firstObject;
-            NSURL *fileInTempUrl = [tempFolderURL URLByAppendingPathComponent:fileName];
-            savedURL = [folderURL URLByAppendingPathComponent:fileName];
-            [fileManager moveItemAtPath:fileInTempUrl.path toPath:savedURL.path error:nil];
-            [fileManager removeItemAtPath:fileInTempUrl.path error:nil];
-        }
     } else {
         // It is image or PDF
         // Save downloaded file to download folder
         NSError *error;
+        NSURL *savedURL;
         
-        NSString *filename = downloadInfo.task.currentRequest.URL.lastPathComponent;
+        NSString *filename = download.task.currentRequest.URL.lastPathComponent;
         savedURL = [folderURL URLByAppendingPathComponent:filename];
         
         
@@ -145,80 +203,19 @@
         success = [fileManager copyItemAtURL:location
                                             toURL:savedURL
                                             error:&error];
-    }
-    
-    if(success){
-        downloadInfo.status = DownloadStatusUsable;
-        downloadInfo.savedURL = savedURL;
-        downloadInfo.resumeData = nil;
-        downloadInfo.task = nil;
         
-    } else {
-        downloadInfo.status = DownloadStatusFailed;
-    }
-
-    //  Notify a change of download
-    [App current].downloadChangedHandler(downloadInfo, downloadGroupInfo);
-    
-    // Reload the cell at asscociated download group
-    dispatch_async(dispatch_get_main_queue(), ^(){
-        NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroupInfo];
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-        
-        DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-        [cell updateViewsWith:downloadGroupInfo];
-    });
-}
-
-
--(void)downloadQueue:(DownloadQueue *)downloadQueue downloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite{
-    
-    if (totalBytesExpectedToWrite == NSURLSessionTransferSizeUnknown) {
-        downloadInfo.status = DownloadStatusFailed;
-    }
-    else{
-        // Calculate the progress.
-        downloadInfo.progress = (double)totalBytesWritten / (double)totalBytesExpectedToWrite;
-    }
-    
-    dispatch_async(dispatch_get_main_queue(), ^(){
-        // Reload the cell
-        NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroupInfo];
-        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-        
-        DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-        cell.progressView.progress = downloadGroupInfo.progress;
-        
-        // Notify a progress download is changed
-        [App current].progressDownloadChangedHandler(downloadInfo, downloadGroupInfo);
-    });
-}
--(void)downloadQueue:(DownloadQueue *)downloadQueue didChangeDownloadInfo:(DownloadInfo *)downloadInfo downloadGroupInfo:(DownloadGroupInfo *) downloadGroupInfo{
-    
-    // Reload cell at asscociated download group
-    if(self.didReloadedTableView){
-        [App current].downloadChangedHandler(downloadInfo, downloadGroupInfo);
-        dispatch_async(dispatch_get_main_queue(), ^(){
-            NSInteger index = [self.downloadQueue.downloadGroups indexOfObject:downloadGroupInfo];
-            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-            DownloadGroupTableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-            [cell updateViewsWith:downloadGroupInfo];
-        });
-    }
-    
-    
-    dispatch_async(dispatch_get_main_queue(), ^(){
-        // Update enable state for Pause/Resume button, anytime has a changed download
-        self.pauseButton.enabled = self.pauseButton.tag == 1;
-        for (DownloadGroupInfo *downloadGroupInfo in self.downloadQueue.downloadGroups) {
-            if(downloadGroupInfo.downloadingCount > 0){
-                self.pauseButton.enabled = YES;
-                break;
-            }
+        if(success){
+            download.status = DownloadStatusUsable;
+            download.savedURL = savedURL;
+            download.resumeData = nil;
+            download.task = nil;
+            
+        } else {
+            download.status = DownloadStatusFailed;
         }
-    });
-
+    }
     
+    NSLog(@"ended");
 }
 
 #pragma mark - IBAction
@@ -254,7 +251,7 @@
     self.addButton.enabled = NO;
     self.resetButton.enabled = NO;
     
-    // Download package data
+    // Download resources
     NSURL *URL = [NSURL URLWithString:DATA_PACKAGE_URL_STRING];
     NSURLRequest *downloadRequest = [NSURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:90];
     
@@ -283,19 +280,19 @@
                         NSArray *data = [Utils jsonDecode:json];
                         
                         // Make DownloadGroupInfo
-                        NSMutableArray *downloadInfos = [[NSMutableArray alloc] init];
+                        NSMutableArray *downloads = [[NSMutableArray alloc] init];
                         for (NSString *downloadUrl in data) {
-                            DownloadInfo *downloadInfo = [[DownloadInfo alloc] initWithDownloadUrl:downloadUrl];
-                            [downloadInfos addObject:downloadInfo];
+                            DownloadInfo *download = [[DownloadInfo alloc] initWithDownloadUrl:downloadUrl];
+                            [downloads addObject:download];
                         }
                         
                         // Get title
                         NSString *title = jsonFileName.fileNameWithoutExtension;
-                        
-                        DownloadGroupInfo *downloadGroupInfo = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloadInfos];
+                        if(![title isEqualToString:@"zip"]) continue;
+                        DownloadGroupInfo *downloadGroup = [[DownloadGroupInfo alloc] initWithTitle:title andDownloadInfos:downloads];
                         
                         // Add to queue
-                        [self.downloadQueue queueDownloadGroupInfo:downloadGroupInfo];
+                        [self.downloadQueue queueDownloadGroupInfo:downloadGroup];
                         
                     }
                     
@@ -303,6 +300,7 @@
                 
                 // Reload table
                 dispatch_async(dispatch_get_main_queue(), ^(){
+                    [self registerObserveForDownloadGroups:self.downloadQueue.downloadGroups];
                     [self.tableView reloadData];
                     self.didReloadedTableView = YES;
                 });
@@ -328,5 +326,7 @@
 - (IBAction)connectionNumberSliderChanged:(id)sender {
     self.downloadQueue.maximumDownloadedGroup = round(self.connectionNumberSlider.value);
     self.downloadQueue.maximumDownloadedPerGroup = round(self.connectionNumberSlider.value);
+    
+    [self.tableView reloadData];
 }
 @end

@@ -23,20 +23,16 @@ typedef enum {
 
 
 @property (nonatomic, strong) NSString *url;
-
 @property (nonatomic, strong) NSURLSessionDownloadTask *task;
-
 @property (nonatomic, strong) NSData *resumeData;
-
 @property (nonatomic, strong) NSURL *savedURL;
 @property (nonatomic, strong) UIImage *thumbnailImage;
-
-@property (nonatomic) double progress;
-
 @property (nonatomic) DownloadStatus status;
+@property (nonatomic, strong) NSProgress *progress;
+@property (nonatomic, strong) NSProgress *unzippingProgress;
 
 // The group that contains this
-@property (nonatomic) DownloadGroupInfo *downloadGroupInfo;
+@property (nonatomic) DownloadGroupInfo *downloadGroup;
 
 -(id)initWithDownloadUrl:(NSString *)url;
 @end

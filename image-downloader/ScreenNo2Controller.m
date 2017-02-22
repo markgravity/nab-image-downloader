@@ -24,6 +24,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     self.title = self.downloadGroup.title;
+    [self registerObserveForDownload:self.downloadGroup.downloads];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -32,30 +33,47 @@
 }
 
 - (void) viewWillAppear:(BOOL)animated{
-    __weak ScreenNo2Controller *weakSelf = self;
-    
-    // Update status is changed
-    [App current].downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
-        if(self.downloadGroup == downloadGroupInfo){
-            dispatch_async(dispatch_get_main_queue(), ^(){
-                NSInteger index = [weakSelf.downloadGroup.downloadInfos indexOfObject:downloadInfo];
-                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-                [weakSelf.collectionView reloadItemsAtIndexPaths:@[indexPath]];
-            });
-        }
-    };
-    
-    // Update progress
-    [App current].progressDownloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
-        if(self.downloadGroup == downloadGroupInfo){
-            dispatch_async(dispatch_get_main_queue(), ^(){
-                NSInteger index = [weakSelf.downloadGroup.downloadInfos indexOfObject:downloadInfo];
-                NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
-                DownloadCollectionViewCell *cell = (DownloadCollectionViewCell* )[weakSelf.collectionView cellForItemAtIndexPath:indexPath];
-                [cell updateViewsWith:downloadInfo];
-            });
-        }
-    };
+
+}
+
+
+- (void) dealloc{
+    @try{
+        [self unRegisterObserveForDownloads:self.downloadGroup.downloads];
+    }
+    @catch(NSException *e){
+        
+    }
+}
+
+#pragma mark - Observes
+-(void) registerObserveForDownload:(NSArray *) downloads{
+    for (DownloadInfo *download in downloads) {
+        [download addObserver:self forKeyPath:@"progress.completedUnitCount" options:NSKeyValueObservingOptionInitial context:nil];
+        [download addObserver:self forKeyPath:@"unzippingProgress.completedUnitCount" options:NSKeyValueObservingOptionInitial context:nil];
+    }
+}
+-(void) unRegisterObserveForDownloads:(NSArray *) downloads{
+    for (DownloadInfo *download in downloads) {
+        [download removeObserver:self forKeyPath:@"progress.completedUnitCount"];
+        [download removeObserver:self forKeyPath:@"unzippingProgress.completedUnitCount"];
+    }
+}
+-(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+    if([keyPath isEqualToString:@"progress.completedUnitCount"]
+       || [keyPath isEqualToString:@"unzippingProgress.completedUnitCount"]){
+        [self updateForDownloadGroup:object];
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
+-(void) updateForDownloadGroup:(DownloadInfo *) download{
+    dispatch_async(dispatch_get_main_queue(), ^(){
+        NSInteger index = [self.downloadGroup.downloads indexOfObject:download];
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:index inSection:0];
+        DownloadCollectionViewCell *cell = (DownloadCollectionViewCell* )[self.collectionView cellForItemAtIndexPath:indexPath];
+        [cell updateViewsWith:download];
+    });
 }
 #pragma mark - Navigation
 
@@ -75,14 +93,14 @@
 
 #pragma mark - UICollectionViewDataSource
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section{
-    return self.downloadGroup.downloadInfos.count;
+    return self.downloadGroup.downloads.count;
 }
 
 // The cell that is returned must be retrieved from a call to -dequeueReusableCellWithReuseIdentifier:forIndexPath:
 - (__kindof UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath{
     DownloadCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:@"DownloadCollectionViewCell" forIndexPath:indexPath];
-    DownloadInfo *downloadInfo = self.downloadGroup.downloadInfos[indexPath.row];
-    [cell updateViewsWith:downloadInfo];
+    DownloadInfo *download = self.downloadGroup.downloads[indexPath.row];
+    [cell updateViewsWith:download];
     
     return cell;
 }

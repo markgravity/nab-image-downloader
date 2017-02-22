@@ -15,20 +15,20 @@
 
 @implementation DownloadCollectionViewCell
 
--(void) updateViewsWith:(DownloadInfo *)downloadInfo{
-    NSInteger percent = round(downloadInfo.progress*100);
+-(void) updateViewsWith:(DownloadInfo *)download{
+    NSInteger percent = download.progress.fractionCompleted*100;
     UIImage *image;
     self.thumbnailImageView.backgroundColor = [UIColor lightGrayColor];
     self.thumbnailImageView.image = nil;
-    switch (downloadInfo.status) {
+    switch (download.status) {
         case DownloadStatusUsable:
             
             // Load image and resize it
-            if(downloadInfo.thumbnailImage == nil){
-                if([downloadInfo.savedURL.path.pathExtension isEqualToString:@"pdf"]){
-                    image = ImageFromPDFFile(downloadInfo.savedURL.path, self.thumbnailImageView.frame.size);
+            if(download.thumbnailImage == nil){
+                if([download.savedURL.path.pathExtension isEqualToString:@"pdf"]){
+                    image = ImageFromPDFFile(download.savedURL.path, self.thumbnailImageView.frame.size);
                 } else {
-                    image = [UIImage imageWithContentsOfFile:downloadInfo.savedURL.path];
+                    image = [UIImage imageWithContentsOfFile:download.savedURL.path];
                     
                     // Get a minimum aspect fill size
                     CGSize thumbnailImageViewSize = self.thumbnailImageView.frame.size;
@@ -44,15 +44,15 @@
                     image = [UIImage imageWithImage:image convertToSize:size];
                 }
                 
-                downloadInfo.thumbnailImage = image;
+                download.thumbnailImage = image;
             } else {
-                image = downloadInfo.thumbnailImage;
+                image = download.thumbnailImage;
             }
             
             // Set to cell
             self.thumbnailImageView.image = image;
             self.statusLabel.text = @"";
-            if([downloadInfo.savedURL.path.pathExtension isEqualToString:@"pdf"]){
+            if([download.savedURL.path.pathExtension isEqualToString:@"pdf"]){
                 self.thumbnailImageView.backgroundColor = [UIColor whiteColor];
             }
 

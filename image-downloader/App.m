@@ -25,11 +25,11 @@ static App *_current = nil;
     self = [super init];
     
     if(self != nil){
-        self.downloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
+        self.downloadChangedHandler = ^(DownloadInfo *download, DownloadGroupInfo *downloadGroup){
             
         };
         
-        self.progressDownloadChangedHandler = ^(DownloadInfo *downloadInfo, DownloadGroupInfo *downloadGroupInfo){
+        self.progressDownloadChangedHandler = ^(DownloadInfo *download, DownloadGroupInfo *downloadGroup){
             
         };
     }

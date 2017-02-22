@@ -12,5 +12,5 @@
 @property (weak, nonatomic) IBOutlet UIImageView *thumbnailImageView;
 @property (weak, nonatomic) IBOutlet UILabel *statusLabel;
 
--(void) updateViewsWith:(DownloadInfo *)downloadInfo;
+-(void) updateViewsWith:(DownloadInfo *)download;
 @end
