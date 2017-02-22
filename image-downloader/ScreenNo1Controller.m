@@ -156,21 +156,32 @@
     if([download.task.currentRequest.URL.path.pathExtension isEqualToString:@"zip"]){
         // It is zip file
         download.status = DownloadStatusUnzipping;
-        __block NSURL *theURL = location;
+        
+        
+        // Move it to group folder
+        NSError *error;
+        NSURL *tempFolderURL = [folderURL URLByAppendingPathComponent:download.task.currentRequest.URL.path.fileNameWithoutExtension];
+
+        NSURL *tempFileURL = [tempFolderURL URLByAppendingPathComponent:location.lastPathComponent];
+        
+        [fileManager createDirectoryAtPath:tempFolderURL.path withIntermediateDirectories:YES attributes:nil error:&error];
+        [fileManager copyItemAtURL:location toURL:tempFileURL error:&error];
+        
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(){
-            NSURL *tempFolderURL = [folderURL URLByAppendingPathComponent:download.task.currentRequest.URL.path.fileNameWithoutExtension];
             
             // Extract it to temp folder
             NSError *error;
-            BOOL succeeded = [SSZipArchive unzipFileAtPath:theURL.path toDestination:tempFolderURL.path  overwrite:YES password:nil error:&error];
+            BOOL succeeded = [SSZipArchive unzipFileAtPath:tempFileURL.path toDestination:tempFolderURL.path  overwrite:YES password:nil error:&error];
             if(succeeded){
                 
                 // Move back to parent folder
                 NSString *fileName = [fileManager contentsOfDirectoryAtPath:tempFolderURL.path error:nil].firstObject;
-                NSURL *fileInTempUrl = [tempFolderURL URLByAppendingPathComponent:fileName];
+                NSURL *fileInTempFolderUrl = [tempFolderURL URLByAppendingPathComponent:fileName];
                 NSURL *savedURL = [folderURL URLByAppendingPathComponent:fileName];
-                [fileManager moveItemAtPath:fileInTempUrl.path toPath:savedURL.path error:nil];
-                [fileManager removeItemAtPath:fileInTempUrl.path error:nil];
+                [fileManager moveItemAtPath:fileInTempFolderUrl.path toPath:savedURL.path error:nil];
+                
+                // Remove temp folder
+                [fileManager removeItemAtPath:tempFolderURL.path error:nil];
                 
                 download.status = DownloadStatusUsable;
                 download.savedURL = savedURL;
@@ -180,7 +191,6 @@
                 download.status = DownloadStatusFailed;
             }
             
-            NSLog(@"zipp");
             download.unzippingProgress.completedUnitCount = download.unzippingProgress.totalUnitCount;
         });
     } else {
@@ -214,8 +224,6 @@
             download.status = DownloadStatusFailed;
         }
     }
-    
-    NSLog(@"ended");
 }
 
 #pragma mark - IBAction
